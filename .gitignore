@@ -39,6 +39,7 @@ Thumbs.db
 *.log
 *.hprof
 
-# Local secrets outside the Android keystore convention
-secrets/
-signing/
+# Local secrets outside the Android keystore convention (repo root only;
+# must not match source packages such as protocol/signing)
+/secrets/
+/signing/
