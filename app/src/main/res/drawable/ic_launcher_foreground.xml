@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!--
+      A1: two outlined screens 50dp wide inside the 108dp adaptive canvas.
+      50dp keeps the rounded corners inside the 72dp launcher mask.
+      No monochrome layer on purpose: the two-color mark must not collapse.
+    -->
+    <group
+        android:scaleX="0.15060"
+        android:scaleY="0.15060"
+        android:translateX="15.45"
+        android:translateY="15.45">
+
+        <!-- top screen -->
+        <path
+            android:pathData="M136,96 L376,96 A40,40 0 0 1 416,136 L416,208 A40,40 0 0 1 376,248 L136,248 A40,40 0 0 1 96,208 L96,136 A40,40 0 0 1 136,96 Z"
+            android:strokeColor="#EAF6FF"
+            android:strokeWidth="12"
+            android:strokeLineJoin="round" />
+
+        <!-- cursor, shifted right 10 to match A1 -->
+        <group android:translateX="10">
+            <path
+                android:pathData="M204.98,146.94 Q206,138 213.36,143.18 L252.64,170.82 Q260,176 251.27,178.18 L244.73,179.82 Q236,182 240.27,189.92 L245.73,200.08 Q250,208 241.95,212.02 L238.05,213.98 Q230,218 225.73,210.08 L220.27,199.92 Q216,192 209.27,197.98 L204.73,202.02 Q198,208 199.02,199.06 Z"
+                android:fillColor="#EAF6FF" />
+        </group>
+
+        <!-- signal arcs, opening up-right from the cursor -->
+        <path
+            android:pathData="M298,160 Q298,140 278,140"
+            android:strokeColor="#6CCBFF"
+            android:strokeWidth="7"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M314,160 Q314,124 278,124"
+            android:strokeColor="#6CCBFF"
+            android:strokeWidth="7"
+            android:strokeLineCap="round"
+            android:strokeAlpha="0.65" />
+        <path
+            android:pathData="M284,160 A6,6 0 1 1 272,160 A6,6 0 1 1 284,160 Z"
+            android:fillColor="#6CCBFF" />
+
+        <!-- bottom screen -->
+        <path
+            android:pathData="M136,264 L376,264 A40,40 0 0 1 416,304 L416,376 A40,40 0 0 1 376,416 L136,416 A40,40 0 0 1 96,376 L96,304 A40,40 0 0 1 136,264 Z"
+            android:strokeColor="#6CCBFF"
+            android:strokeWidth="12"
+            android:strokeLineJoin="round" />
+
+        <!-- d-pad -->
+        <path
+            android:pathData="M157,341 L203,341"
+            android:strokeColor="#EAF6FF"
+            android:strokeWidth="18"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M180,318 L180,364"
+            android:strokeColor="#EAF6FF"
+            android:strokeWidth="18"
+            android:strokeLineCap="round" />
+
+        <!-- classic ABXY diamond -->
+        <path
+            android:pathData="M350,316 A10,10 0 1 1 330,316 A10,10 0 1 1 350,316 Z"
+            android:fillColor="#6CCBFF" />
+        <path
+            android:pathData="M324,340 A10,10 0 1 1 304,340 A10,10 0 1 1 324,340 Z"
+            android:fillColor="#6CCBFF" />
+        <path
+            android:pathData="M376,340 A10,10 0 1 1 356,340 A10,10 0 1 1 376,340 Z"
+            android:fillColor="#6CCBFF" />
+        <path
+            android:pathData="M350,364 A10,10 0 1 1 330,364 A10,10 0 1 1 350,364 Z"
+            android:fillColor="#6CCBFF" />
+    </group>
+</vector>

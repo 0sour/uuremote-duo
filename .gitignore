@@ -1,0 +1,44 @@
+# Android / Gradle
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Signing / secrets
+*.jks
+*.keystore
+keystore.properties
+uu_signing.key
+signing.key
+
+# Build outputs
+*.apk
+*.aab
+dist/
+
+# Local research artifacts (official APK, extracted repos, screenshots)
+research/
+
+# Scratch / local agent state
+.tmp/
+tmp/
+.zcode/
+.vscode/
+
+# Design render screenshots (may contain demo/account data; regenerate locally)
+docs/ui/shots/
+
+# OS / crash logs
+.DS_Store
+Thumbs.db
+*.log
+*.hprof
+
+# Local secrets outside the Android keystore convention
+secrets/
+signing/

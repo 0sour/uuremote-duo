@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 单屏按键映射（参考）</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  .sk-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.05fr .95fr; gap: 10px; padding: 9px 12px; }
+  .single-app-frame.size-bottom .sk-body { display: flex; flex-direction: column; overflow-y: auto; padding: 7px 9px; }
+  .sk-preview { border: 1px solid var(--outline); border-radius: 10px; background: var(--surface-1); position: relative; overflow: hidden; min-height: 180px; }
+  .sk-preview .wallpaper { position: absolute; inset: 0; opacity: .55; }
+  .sk-preview .game { position: absolute; left: 30px; top: 26px; right: 30px; bottom: 26px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12); background: linear-gradient(150deg, rgba(16,30,46,.92), rgba(6,10,16,.94)); display: grid; place-items: center; color: var(--text-tertiary); font-size: 9px; }
+  .sk-preview .vk { position: absolute; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: rgba(8,12,17,.72); border: 1px solid rgba(255,255,255,.22); color: rgba(255,255,255,.8); font: 600 10px var(--mono); }
+  .sk-preview .vk.wheel { width: 82px; height: 82px; left: 28px; bottom: 26px; border-style: dashed; color: var(--accent); border-color: rgba(108,203,255,.5); }
+  .sk-preview .vk.a { right: 44px; bottom: 40px; width: 40px; height: 40px; }
+  .sk-preview .vk.b { right: 96px; bottom: 64px; }
+  .sk-preview .vk.x { right: 96px; bottom: 16px; }
+  .sk-preview .badge { position: absolute; left: 12px; top: 10px; height: 22px; padding: 0 8px; border-radius: 999px; background: rgba(8,12,17,.72); border: 1px solid rgba(255,255,255,.14); color: var(--text-tertiary); font-size: 8px; display: inline-flex; align-items: center; gap: 5px; }
+  .sk-right { display: flex; flex-direction: column; gap: 7px; min-height: 0; }
+  .sk-plans { display: flex; gap: 4px; flex: none; }
+  .sk-plans button { height: 23px; padding: 0 7px; border-radius: 6px; border: 1px solid var(--outline); background: var(--surface-1); color: var(--text-secondary); font: 500 8px var(--font); }
+  .sk-plans button.active { color: var(--accent); border-color: rgba(108,203,255,.3); background: var(--accent-soft); }
+  .sk-props { display: flex; flex-direction: column; gap: 5px; min-height: 0; }
+  .sk-props .cc-row { min-height: 34px; padding: 5px 7px; }
+  .sk-props .cc-row .k { font-size: 10px; }
+  .sk-props .cc-row .d { font-size: 8px; }
+  .sk-actions { display: flex; gap: 5px; margin-top: auto; }
+  .sk-actions .cc-btn { height: 28px; font-size: 8px; }
+  .sk-actions .cc-btn.primary { flex: 1; justify-content: center; }
+  .sk-ref { color: var(--warning); font-size: 8px; line-height: 1.4; }
+  .single-app-frame.size-bottom .sk-body { display: flex; flex-direction: column; overflow-y: auto; padding: 6px 9px; }
+  .single-app-frame.size-bottom .sk-preview { min-height: 120px; height: 120px; flex: none; }
+  .single-app-frame.size-bottom .sk-right { flex: none; }
+  .single-app-frame.size-bottom .sk-props { gap: 4px; }
+  .single-app-frame.size-bottom .sk-props .cc-row { min-height: 30px; }
+  .single-app-frame.size-bottom .sk-ref { display: none; }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+<script src="single.js" defer></script>
+</head>
+<body data-gp-back="duo-keymap.html" data-gp-x="添加按键" data-gp-y="删除">
+<header class="page-head">
+  <div>
+    <h1>单屏按键映射 · 参考稿（未排期）</h1>
+    <p>官方形态参考：单屏把预览、方案、属性放在同一 frame。Duo 决策仍是不做触屏虚拟按键/轮盘，只保留“实体手柄→键鼠”的方向。</p>
+  </div>
+  <div class="meta">
+    <span class="pill warning">参考 · 未排期</span>
+    <span class="pill">不做虚拟按键/轮盘</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">宿主</span>
+  <button data-single-size="top" class="active">上屏 832×468</button>
+  <button data-single-size="bottom">下屏 640×480</button>
+  <a href="duo-keymap.html" style="margin-left:10px">双屏参考 →</a>
+</div>
+
+<main class="duo">
+  <div class="screen-wrap">
+    <div class="screen-label" data-single-label>单屏 · 上屏 Activity · 832×468dp · 官方形态参考</div>
+    <section class="single-app-frame size-top" data-single-frame>
+      <div class="sa-bar">
+        <a class="icon-btn" href="duo-keymap.html" title="返回双屏参考"><svg class="icon"><use href="#i-back"/></svg></a>
+        <div>
+          <div class="sa-title">按键映射</div>
+          <div class="sa-sub"><span class="crumb"><b>串流</b><span class="sep">›</span>控制中心<span class="sep">›</span>按键映射</span> · 参考稿 · 未排期</div>
+        </div>
+        <span class="chip warning" style="height:20px;font-size:8px">未排期</span>
+        <div class="sa-actions"><button class="icon-btn" title="关闭"><svg class="icon"><use href="#i-x"/></svg></button></div>
+      </div>
+
+      <div class="sk-body">
+        <div class="sk-preview">
+          <div class="wallpaper"></div>
+          <div class="game">Game Preview — 官方形态参考</div>
+          <div class="badge"><svg class="icon sm"><use href="#i-eye"/></svg>参考预览 · 只读</div>
+          <div class="vk wheel">W</div>
+          <div class="vk a">A</div><div class="vk b">B</div><div class="vk x">X</div>
+        </div>
+
+        <div class="sk-right">
+          <div class="sk-plans">
+            <button class="active" data-sa-tab="sk-plan1" data-gp-initial>动作游戏</button>
+            <button data-sa-tab="sk-plan2">我的方案 A</button>
+            <button data-sa-tab="sk-plan3">射击</button>
+            <button data-sa-tab="sk-plan4">+ 新建</button>
+          </div>
+          <div class="sk-props">
+            <div class="cc-row"><div class="grow"><div class="k">类型</div><div class="d">鼠标按键与轮盘 · 绑定 WASD</div></div><div class="cc-seg"><button>控制键</button><button class="on">轮盘</button><button>宏</button></div></div>
+            <div class="cc-row"><div class="grow"><div class="k">大小 / 透明度</div><div class="d">默认 30%；按下后不透明</div></div><div class="cc-seg"><button>小</button><button class="on">中</button><button>大</button></div></div>
+            <div class="cc-row"><div class="grow"><div class="k">触发方式</div><div class="d">按下 / 长按 / 切换</div></div><div class="cc-seg"><button class="on">按下</button><button>长按</button><button>切换</button></div></div>
+            <div class="cc-row"><div class="grow"><div class="k">轮盘方向</div><div class="d">上 W · 左 A · 下 S · 右 D</div></div><span class="v">WASD</span></div>
+          </div>
+          <div class="sk-ref">参考稿：Duo 手柄常驻，本项目不计划做屏幕覆盖层；若实现，只做实体手柄→键鼠模板。</div>
+          <div class="sk-actions">
+            <button class="cc-btn"><svg class="icon sm"><use href="#i-plus"/></svg>添加</button>
+            <button class="cc-btn">复制</button>
+            <button class="cc-btn primary">保存方案</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sa-foot">
+        <div class="keys"><span><kbd>B</kbd> 选择</span><span><kbd>A</kbd> 返回</span><span><kbd>X</kbd>/<kbd>Y</kbd> 添加/删除</span><span><kbd>START</kbd> 说明</span></div>
+        <span>参考稿 · 未排期 · 不做触屏虚拟按键/轮盘</span>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  该单屏页只是把官方移动端形态放进 Duo 的单屏尺寸，<b>不代表排期</b>。结论见
+  <a href="../feature-matrix.md">feature-matrix.md</a> 决策记录：不做触屏虚拟按键/轮盘，后续只考虑实体手柄→键鼠内置模板。
+  双屏参考稿见 <a href="duo-keymap.html">duo-keymap.html</a>。
+</aside>
+</body>
+</html>

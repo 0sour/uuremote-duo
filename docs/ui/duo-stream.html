@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 双屏串流与工具箱</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  [hidden] { display: none !important; }
+  .tool-panel { display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 0; }
+
+  .gamepad-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 22px; padding: 0 9px; border-radius: var(--radius-pill);
+    border: 1px solid rgba(108,203,255,.28); background: var(--accent-soft);
+    color: var(--accent); font: 500 9px var(--font); cursor: pointer; white-space: nowrap;
+  }
+  .gamepad-chip.local {
+    border-color: rgba(255,196,107,.32); background: rgba(255,196,107,.10); color: var(--warning);
+  }
+  .local-menu {
+    position: absolute; inset: 0; z-index: 30;
+    background: var(--scrim);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(3px);
+  }
+  .local-menu-card {
+    width: 430px; max-width: calc(100% - 36px); max-height: calc(100% - 20px);
+    overflow-y: auto; scrollbar-width: none;
+    border-radius: var(--radius-xl); border: 1px solid var(--outline-strong);
+    background: var(--surface-1); box-shadow: 0 24px 60px var(--shadow);
+    padding: 12px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .local-menu-card::-webkit-scrollbar { width: 0; }
+  .local-menu-card .menu-title { font-size: 14px; font-weight: 650; }
+  .local-menu-card .menu-sub { font-size: 10px; color: var(--text-tertiary); line-height: 1.45; }
+  .menu-option {
+    height: 38px; border-radius: 10px; border: 1px solid var(--outline);
+    background: var(--surface-2); color: var(--text-primary);
+    display: flex; align-items: center; gap: 9px; padding: 0 12px;
+    font: 500 12px var(--font); cursor: pointer; text-align: left;
+  }
+  .menu-option:hover { border-color: var(--outline-strong); }
+  .menu-option .grower { flex: 1; }
+  .menu-option .k { font: 600 10px var(--font); color: var(--text-secondary); border: 1px solid var(--outline); border-radius: 5px; padding: 2px 5px; }
+  .menu-option.danger { color: var(--error); border-color: rgba(255,138,128,.22); }
+  .menu-option .mode { font: 500 10px var(--mono); color: var(--accent); }
+  .local-menu-card .menu-foot { font-size: 8px; color: var(--text-tertiary); line-height: 1.4; border-top: 1px solid rgba(46,55,66,.5); padding-top: 6px; }
+  .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .menu-mini {
+    height: 30px; border-radius: 9px; border: 1px solid var(--outline);
+    background: var(--surface-2); color: var(--text-secondary);
+    display: flex; align-items: center; gap: 7px; padding: 0 9px;
+    font: 500 10px var(--font); text-decoration: none;
+  }
+  .menu-mini:hover { border-color: var(--outline-strong); color: var(--text-primary); }
+  .menu-mini .tag { margin-left: auto; font: 500 8px var(--mono); color: var(--text-tertiary); }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+</head>
+<body data-gp-mode="local" data-gp-back="duo-home.html" data-gp-x="切换手柄模式" data-gp-y="状态">
+<header class="page-head">
+  <div>
+    <h1>双屏串流 · 上屏桌面 / 下屏工具箱</h1>
+    <p>上屏只显示远程桌面；下屏四个 Tab：触摸板、键盘、快捷键、状态。键盘内置拼音，键盘上的“中/英”键切换输入，同时保留“系统输入法”按钮。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Streaming</span>
+    <span class="pill">1080p · 60 FPS</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <button data-ime style="margin-left:auto">内置拼音预览</button>
+  <button data-sysime>系统输入法预览</button>
+  <a href="single-landscape-stream.html" style="margin-left:10px">单屏版 →</a>
+</div>
+
+<main class="duo">
+  <!-- ===================== TOP SCREEN ===================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">上屏 · 远程桌面（只读）</div>
+    <section class="screen-top">
+      <div class="video">
+        <div class="wallpaper"></div>
+
+        <div class="desktop-window">
+          <div class="win-bar">
+            <span class="win-dot"></span><span class="win-dot"></span><span class="win-dot"></span>
+            <span class="win-title">工作区 — 文件资源管理器</span>
+          </div>
+          <div class="win-body">
+            <div class="win-line w36"></div>
+            <div class="win-line w80"></div>
+            <div class="win-line w60"></div>
+            <div class="win-grid">
+              <div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div>
+              <div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="remote-cursor">
+          <svg viewBox="0 0 14 20" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1l11 9-5.2.8L9 18l-2.6 1-2.2-7.2L1 15z" fill="#fff" stroke="#111" stroke-width="1.2"/>
+          </svg>
+        </div>
+
+        <div class="taskbar">
+          <span class="tb-icon"></span><span class="tb-icon"></span><span class="tb-icon"></span>
+          <span class="tb-icon" style="margin-left:6px;opacity:.55"></span>
+          <span class="tb-time">14:32</span>
+        </div>
+
+        <div class="stat-chip">
+          <span class="dot"></span> 1920×1080 · 60 FPS · 18 ms
+        </div>
+        <div class="top-note" style="right:14px;top:12px"><svg class="icon sm"><use href="#i-gamepad"/></svg>上屏远程画面 · 只读</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="hinge">DUO</div>
+
+  <!-- ===================== BOTTOM SCREEN ===================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">下屏 · 工具箱（640×480dp）</div>
+    <section class="screen-bottom">
+      <div class="bottom-content">
+        <div class="toolbar-line">
+          <div class="dev">
+            <span class="status-dot online"></span>
+            <span class="name truncate">客厅台式机</span>
+            <span class="chip ghost" style="height:20px;font-size:9px">已连接</span>
+          </div>
+          <button class="gamepad-chip local" data-gamepad title="切换手柄模式（切换时会释放远端按键）">
+            <svg class="icon sm"><use href="#i-gamepad"/></svg>
+            <span data-gamepad-label>手柄 本地操作</span>
+          </button>
+          <a class="gamepad-chip" href="duo-control-center.html" style="text-decoration:none" title="打开控制中心：分辨率/帧率/画质/码率">
+            <svg class="icon sm"><use href="#i-monitor"/></svg>
+            <span>1080p · 60</span>
+          </a>
+          <span class="lat mono">18 ms · 60 FPS</span>
+          <div class="actions">
+            <button class="icon-btn" title="本地菜单" data-menu><svg class="icon"><use href="#i-menu"/></svg></button>
+            <button class="icon-btn" title="静音"><svg class="icon"><use href="#i-volume"/></svg></button>
+            <button class="icon-btn" title="设置"><svg class="icon"><use href="#i-settings"/></svg></button>
+            <button class="icon-btn" title="断开" style="color:var(--error)"><svg class="icon"><use href="#i-power"/></svg></button>
+          </div>
+        </div>
+
+        <div class="tabs" data-tab-group>
+          <button class="tab active" data-tab="pad">触摸板</button>
+          <button class="tab" data-tab="keys">键盘</button>
+          <button class="tab" data-tab="shortcuts">快捷键</button>
+          <button class="tab" data-tab="stats">状态</button>
+          <button class="tab" data-sysime title="唤起系统输入法" style="margin-left:auto"><svg class="icon sm"><use href="#i-keyboard"/></svg>系统输入法</button>
+        </div>
+
+        <div class="tool-frame">
+          <!-- ===== TOUCHPAD ===== -->
+          <div class="tool-panel" data-panel="pad">
+            <div class="touchpad">
+              <div class="pad-cursor"></div>
+              <div class="pad-hint">单指移动 · 点击左键 · 双指滚动 · 双指点击右键 · 长按拖拽</div>
+            </div>
+            <div class="pad-actions">
+              <button class="pad-btn primary"><svg class="icon sm"><use href="#i-mouse"/></svg>左键</button>
+              <button class="pad-btn">中键</button>
+              <button class="pad-btn">右键</button>
+              <button class="pad-btn toggle on"><svg class="icon sm"><use href="#i-drag"/></svg>拖拽锁定</button>
+              <button class="pad-btn" title="灵敏度"><svg class="icon sm"><use href="#i-settings"/></svg></button>
+            </div>
+          </div>
+
+          <!-- ===== KEYBOARD ===== -->
+          <div class="tool-panel" data-panel="keys" hidden>
+            <div class="kb-top">
+              <div class="kb-field" data-ime>
+                <svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-keyboard"/></svg>
+                <span style="flex:1" data-kb-hint data-zh="内置拼音输入中文，或唤起系统输入法…" data-en="English 模式：直接发送按键…">内置拼音输入中文，或唤起系统输入法…</span>
+                <span class="caret"></span>
+                <svg class="icon sm tertiary" title="展开输入浮层"><use href="#i-fullscreen"/></svg>
+              </div>
+              <button class="pad-btn" data-sysime title="唤起系统输入法" style="flex:0 0 62px;height:36px;font-size:11px">系统</button>
+            </div>
+
+            <div class="kb-candidates" data-cand-bar>
+              <span class="kb-comp">ni'hao</span>
+              <span class="cand sel">你好</span>
+              <span class="cand">拟好</span>
+              <span class="cand">尼豪</span>
+              <span class="cand">你</span>
+              <span class="cand">世界</span>
+              <span class="ime-engine">内置拼音 · 空格上屏首选</span>
+            </div>
+
+            <div class="kb">
+              <div class="kb-row">
+                <div class="key special w15">Esc</div>
+                <div class="key">1</div><div class="key">2</div><div class="key">3</div><div class="key">4</div>
+                <div class="key">5</div><div class="key">6</div><div class="key">7</div><div class="key">8</div>
+                <div class="key">9</div><div class="key">0</div><div class="key">-</div><div class="key">=</div>
+                <div class="key special w15"><svg class="icon sm"><use href="#i-backspace"/></svg></div>
+              </div>
+              <div class="kb-row">
+                <div class="key special w15">Tab</div>
+                <div class="key">Q</div><div class="key">W</div><div class="key">E</div><div class="key">R</div>
+                <div class="key">T</div><div class="key">Y</div><div class="key">U</div><div class="key">I</div>
+                <div class="key">O</div><div class="key">P</div><div class="key">[</div><div class="key">]</div>
+                <div class="key special w15">\</div>
+              </div>
+              <div class="kb-row">
+                <div class="key special w15">Caps</div>
+                <div class="key">A</div><div class="key">S</div><div class="key">D</div><div class="key">F</div>
+                <div class="key">G</div><div class="key">H</div><div class="key">J</div><div class="key">K</div>
+                <div class="key">L</div><div class="key">;</div><div class="key">'</div>
+                <div class="key special w2"><svg class="icon sm"><use href="#i-enter"/></svg> Enter</div>
+              </div>
+              <div class="kb-row">
+                <div class="key mod w2"><svg class="icon sm"><use href="#i-shift"/></svg> Shift</div>
+                <div class="key">Z</div><div class="key">X</div><div class="key">C</div><div class="key">V</div>
+                <div class="key">B</div><div class="key">N</div><div class="key">M</div><div class="key">,</div>
+                <div class="key">.</div><div class="key">/</div>
+                <div class="key mod w2"><svg class="icon sm"><use href="#i-shift"/></svg> Shift</div>
+              </div>
+              <div class="kb-row">
+                <div class="key mod w15">Ctrl</div>
+                <div class="key mod" data-lang-toggle title="切换中英文输入">中/英</div>
+                <div class="key mod"><svg class="icon sm"><use href="#i-win"/></svg></div>
+                <div class="key mod w15">Alt</div>
+                <div class="key w45" style="justify-content:center"><svg class="icon sm" style="opacity:.55"><use href="#i-space"/></svg></div>
+                <div class="key mod w15">Alt</div>
+                <div class="key special"><svg class="icon sm"><use href="#i-left"/></svg></div>
+                <div class="key special"><svg class="icon sm"><use href="#i-up"/></svg></div>
+                <div class="key special"><svg class="icon sm"><use href="#i-down"/></svg></div>
+                <div class="key special"><svg class="icon sm"><use href="#i-right"/></svg></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== SHORTCUTS ===== -->
+          <div class="tool-panel" data-panel="shortcuts" hidden>
+            <div class="shortcut-grid">
+              <div class="shortcut"><span class="combo">Ctrl + C</span><span class="name">复制</span></div>
+              <div class="shortcut"><span class="combo">Ctrl + V</span><span class="name">粘贴</span></div>
+              <div class="shortcut"><span class="combo">Ctrl + X</span><span class="name">剪切</span></div>
+              <div class="shortcut"><span class="combo">Ctrl + Z</span><span class="name">撤销</span></div>
+              <div class="shortcut"><span class="combo">Ctrl + A</span><span class="name">全选</span></div>
+              <div class="shortcut"><span class="combo">Alt + Tab</span><span class="name">切换窗口</span></div>
+              <div class="shortcut"><span class="combo">Win + D</span><span class="name">显示桌面</span></div>
+              <div class="shortcut"><span class="combo">Win + E</span><span class="name">文件管理器</span></div>
+              <div class="shortcut"><span class="combo">Esc</span><span class="name">退出/取消</span></div>
+              <div class="shortcut"><span class="combo">Tab</span><span class="name">切换焦点</span></div>
+              <div class="shortcut"><span class="combo">Ctrl + Shift + Esc</span><span class="name">任务管理器</span></div>
+              <div class="shortcut danger"><span class="combo">Win + L</span><span class="name">锁定电脑</span></div>
+            </div>
+            <div class="note-box">快捷键以单次组合发送；断开或切页时自动释放所有按住的键。</div>
+          </div>
+
+          <!-- ===== STATS ===== -->
+          <div class="tool-panel" data-panel="stats" hidden>
+            <div class="stat-grid">
+              <div class="stat-card"><span class="k">帧率</span><span class="v">60<small>FPS</small></span></div>
+              <div class="stat-card"><span class="k">码率</span><span class="v">42.6<small>Mbps</small></span></div>
+              <div class="stat-card"><span class="k">延迟</span><span class="v" style="color:var(--online)">18<small>ms</small></span></div>
+              <div class="stat-card"><span class="k">丢包</span><span class="v">0.0<small>%</small></span></div>
+            </div>
+            <div class="stat-lines">
+              <div class="stat-line"><span class="k">画面</span><span class="v">1920×1080 · 16:9</span></div>
+              <div class="stat-line"><span class="k">编码 / 解码</span><span class="v">H.264 High · MediaCodec</span></div>
+              <div class="stat-line"><span class="k">通道</span><span class="v">P2P 直连 · UDP</span></div>
+              <div class="stat-line"><span class="k">会话</span><span class="v">00:18:42</span></div>
+            </div>
+            <div class="pad-actions">
+              <button class="pad-btn">重新连接</button>
+              <button class="pad-btn primary">返回设备列表</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-foot">
+          <div class="keys">
+            <span><kbd>手柄</kbd> 本地操作</span>
+            <span><kbd>L1</kbd>/<kbd>R1</kbd> 页签</span>
+            <span><kbd>A</kbd> 本地菜单</span>
+            <span><kbd>START</kbd> 说明</span>
+          </div>
+          <span>START 打开手柄说明</span>
+        </div>
+
+        <!-- ===== IME OVERLAY: 内置拼音 / 系统输入法 ===== -->
+        <div class="ime-overlay" data-ime-overlay hidden>
+          <div class="ime-top">
+            <div class="ime-field">
+              <span class="ime-comp" data-ime-text>ni'hao</span><span class="caret"></span>
+              <span class="ime-engine" data-ime-tag>内置拼音</span>
+            </div>
+            <button class="pad-btn" data-sysime style="flex:0 0 92px;height:40px;font-size:11px">系统输入法</button>
+            <button class="pad-btn" data-ime-close style="flex:0 0 64px;height:40px">完成</button>
+          </div>
+          <div class="ime-panel" data-ime-panel="builtin">
+            <div class="ime-candidates" data-cand-bar>
+              <span class="cand sel">你好</span>
+              <span class="cand">拟好</span>
+              <span class="cand">尼豪</span>
+              <span class="cand">你</span>
+              <span class="cand">世界</span>
+              <span class="ime-engine">本地词典 · 1/3 · 数字键选择</span>
+            </div>
+            <div class="ime-preview">
+              <div class="ime-preview-k">远端输入位置</div>
+              <div class="ime-preview-text"><span data-ime-preview-text>你好，世界</span><span class="caret"></span></div>
+              <div class="ime-preview-d" data-ime-preview-d data-zh="组合中的拼音只在本机显示；候选上屏后才写入电脑光标处。当前为内置拼音，不调用系统输入法。" data-en="英文模式：按键直接以 VK 发送；不显示候选，不调用系统输入法。">组合中的拼音只在本机显示；候选上屏后才写入电脑光标处。当前为内置拼音，不调用系统输入法。</div>
+            </div>
+            <div class="ime-keys">
+              <div class="ime-kb-label" data-ime-kb-label data-zh="内置键盘 · 本地拼音词典 · 空格上屏首选" data-en="内置键盘 · 英文模式 · 直接发送按键">内置键盘 · 本地拼音词典 · 空格上屏首选</div>
+              <div class="ime-kb">
+                <div class="ime-kb-row">
+                  <div class="ime-key">Q</div><div class="ime-key">W</div><div class="ime-key">E</div><div class="ime-key">R</div>
+                  <div class="ime-key">T</div><div class="ime-key">Y</div><div class="ime-key">U</div><div class="ime-key">I</div>
+                  <div class="ime-key">O</div><div class="ime-key">P</div>
+                </div>
+                <div class="ime-kb-row">
+                  <div class="ime-key">A</div><div class="ime-key">S</div><div class="ime-key">D</div><div class="ime-key">F</div>
+                  <div class="ime-key">G</div><div class="ime-key">H</div><div class="ime-key">J</div><div class="ime-key">K</div>
+                  <div class="ime-key">L</div>
+                </div>
+                <div class="ime-kb-row">
+                  <div class="ime-key mod">123</div>
+                  <div class="ime-key">Z</div><div class="ime-key">X</div><div class="ime-key">C</div><div class="ime-key">V</div>
+                  <div class="ime-key">B</div><div class="ime-key">N</div><div class="ime-key">M</div>
+                  <div class="ime-key mod" style="flex:1.6"><svg class="icon sm"><use href="#i-backspace"/></svg></div>
+                </div>
+                <div class="ime-kb-row">
+                  <div class="ime-key mod" style="flex:1.4" data-lang-toggle>中 / 英</div>
+                  <div class="ime-key mod">，</div>
+                  <div class="ime-key space"><svg class="icon sm" style="opacity:.5"><use href="#i-space"/></svg></div>
+                  <div class="ime-key mod">。</div>
+                  <div class="ime-key mod" style="flex:1.4"><svg class="icon sm"><use href="#i-enter"/></svg></div>
+                </div>
+              </div>
+              <div class="ime-note" style="margin-top:6px">
+                中文候选经 text_input 发送；英文/控制键走 kbd_press；空格提交首选，数字键选候选
+              </div>
+            </div>
+          </div>
+
+          <div class="ime-panel" data-ime-panel="system" hidden>
+            <div class="ime-sys-banner">系统输入法已唤起 · 候选与键盘由 Gboard / 搜狗绘制；收起后回到内置拼音</div>
+            <div class="ime-preview">
+              <div class="ime-preview-k">远端输入位置</div>
+              <div class="ime-preview-text">你好，世界<span class="caret"></span></div>
+              <div class="ime-preview-d">系统 IME 的组合文本只在本机显示；commitText 后经 text_input 发送，内置键盘已隐藏。</div>
+            </div>
+            <div class="ime-keys">
+              <div class="ime-kb-label">系统输入法键盘区域</div>
+              <div class="ime-kb">
+                <div class="ime-kb-row">
+                  <div class="ime-key">Q</div><div class="ime-key">W</div><div class="ime-key">E</div><div class="ime-key">R</div>
+                  <div class="ime-key">T</div><div class="ime-key">Y</div><div class="ime-key">U</div><div class="ime-key">I</div>
+                  <div class="ime-key">O</div><div class="ime-key">P</div>
+                </div>
+                <div class="ime-kb-row">
+                  <div class="ime-key">A</div><div class="ime-key">S</div><div class="ime-key">D</div><div class="ime-key">F</div>
+                  <div class="ime-key">G</div><div class="ime-key">H</div><div class="ime-key">J</div><div class="ime-key">K</div>
+                  <div class="ime-key">L</div>
+                </div>
+                <div class="ime-kb-row">
+                  <div class="ime-key mod">123</div>
+                  <div class="ime-key">Z</div><div class="ime-key">X</div><div class="ime-key">C</div><div class="ime-key">V</div>
+                  <div class="ime-key">B</div><div class="ime-key">N</div><div class="ime-key">M</div>
+                  <div class="ime-key mod" style="flex:1.6"><svg class="icon sm"><use href="#i-backspace"/></svg></div>
+                </div>
+                <div class="ime-kb-row">
+                  <div class="ime-key mod" style="flex:1.4">中 / 英</div>
+                  <div class="ime-key mod">，</div>
+                  <div class="ime-key space"><svg class="icon sm" style="opacity:.5"><use href="#i-space"/></svg></div>
+                  <div class="ime-key mod">。</div>
+                  <div class="ime-key mod" style="flex:1.4"><svg class="icon sm"><use href="#i-enter"/></svg></div>
+                </div>
+              </div>
+              <div class="row between" style="margin-top:6px;gap:8px">
+                <button class="pad-btn" data-ime-back style="flex:0 0 118px;height:32px;font-size:11px">返回内置键盘</button>
+                <span class="ime-note" style="text-align:right">commitText → text_input 发送到电脑光标处</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== LOCAL MENU (system Back / Return) ===== -->
+        <div class="local-menu" data-menu-overlay hidden>
+          <div class="local-menu-card">
+            <div class="row between" style="align-items:flex-start">
+              <div>
+                <div class="menu-title">本地菜单</div>
+                <div class="menu-sub">系统返回/Return 打开；不占用任何手柄键</div>
+              </div>
+              <span class="chip warning" style="height:22px;font-size:9px"><span class="status-dot warning" style="width:5px;height:5px"></span>远端手柄已暂停</span>
+            </div>
+
+            <button class="menu-option" data-menu-close>
+              <svg class="icon sm"><use href="#i-back"/></svg>
+              <span class="grower">继续远控</span><span class="k">B</span>
+            </button>
+
+            <div class="menu-grid">
+              <a class="menu-mini" href="duo-control-center.html?panel=display"><svg class="icon sm"><use href="#i-monitor"/></svg>画面与显示<span class="tag">重连</span></a>
+              <a class="menu-mini" href="duo-control-center.html?panel=peripheral"><svg class="icon sm"><use href="#i-gamepad"/></svg>外设<span class="tag">即时</span></a>
+              <a class="menu-mini" href="duo-control-center.html?panel=security"><svg class="icon sm"><use href="#i-shield"/></svg>安全<span class="tag">即时</span></a>
+              <a class="menu-mini" href="duo-control-center.html?panel=more"><svg class="icon sm"><use href="#i-more"/></svg>更多<span class="tag">工具</span></a>
+            </div>
+
+            <div class="menu-sub" style="margin-top:2px">页面</div>
+            <div class="menu-grid">
+              <a class="menu-mini" href="duo-files.html"><svg class="icon sm"><use href="#i-folder"/></svg>文件传输<span class="tag">传输</span></a>
+              <a class="menu-mini" href="duo-display.html"><svg class="icon sm"><use href="#i-cast"/></svg>多屏<span class="tag">屏幕</span></a>
+              <a class="menu-mini" href="duo-tools.html"><svg class="icon sm"><use href="#i-terminal"/></svg>工具<span class="tag">低频</span></a>
+              <a class="menu-mini" href="duo-account.html"><svg class="icon sm"><use href="#i-user"/></svg>账号<span class="tag">本机</span></a>
+            </div>
+
+            <button class="menu-option" data-gamepad>
+              <svg class="icon sm"><use href="#i-gamepad"/></svg>
+              <span class="grower">手柄模式</span>
+              <span class="mode" data-gamepad-short>直通电脑</span>
+              <span class="k">B</span>
+            </button>
+
+            <a class="menu-option" href="duo-settings.html" style="text-decoration:none">
+              <svg class="icon sm"><use href="#i-settings"/></svg>
+              <span class="grower">设置</span>
+              <span class="k">B</span>
+            </a>
+
+            <button class="menu-option danger">
+              <svg class="icon sm"><use href="#i-power"/></svg>
+              <span class="grower">断开连接</span>
+            </button>
+
+            <div class="menu-foot">
+              打开本地菜单时，应用会先发零值并 `gpd_disconnect`，释放远端所有按住的键；
+              关闭后恢复直通并重新 `gpd_connect`。本地操作模式下，手柄才用于导航抽屉。
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  交互说明：实际产品默认把手柄直通电脑（标准 Xbox 位掩码）；本设计稿为了展示焦点系统，默认切到“本地操作”。
+  点工具栏的手柄 chip 可切回“直通电脑”，焦点环会消失、HUD 变为黄色“手柄直通”。切到本地操作会先发零值 +
+  `gpd_disconnect` 释放远端按键，切回时重新 `gpd_connect`。本地菜单只走系统 Return/Back 或触摸按钮。
+  点击键盘输入行（右侧展开图标）打开内置拼音浮层；键盘“中/英”键切换输入；系统输入法按钮可切 Gboard/搜狗。
+</aside>
+</body>
+</html>

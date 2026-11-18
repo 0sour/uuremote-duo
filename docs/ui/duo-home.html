@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 双屏主页</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  .home-status {
+    min-height: 306px; border-radius: var(--radius-lg); border: 1px solid var(--outline);
+    background: linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.012));
+    padding: 16px; display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden;
+  }
+  .home-status::before {
+    content: ""; position: absolute; right: -40px; top: -40px; width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(108,203,255,.14), transparent 68%); pointer-events: none;
+  }
+  .home-status .hs-title { font-size: 14px; font-weight: 650; position: relative; }
+  .home-status .hs-sub { font-size: 10px; color: var(--text-tertiary); line-height: 1.55; position: relative; }
+  .home-status .hs-pref { position: relative; }
+  .home-status .hs-flow { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; position: relative; }
+  .home-status .hs-step { border: 1px solid var(--outline); border-radius: 9px; background: var(--surface-1); padding: 8px; }
+  .home-status .hs-step .n { font-size: 8px; color: var(--text-tertiary); letter-spacing: .08em; text-transform: uppercase; }
+  .home-status .hs-step .v { font-size: 11px; font-weight: 600; margin-top: 2px; }
+  .home-status .hs-foot { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--outline); color: var(--text-tertiary); font-size: 9px; line-height: 1.55; position: relative; }
+  .home-status .hs-foot b { color: var(--text-secondary); font-weight: 550; }
+
+  .home-device-list { padding: 8px 12px 6px; gap: 7px; }
+  .home-device-list .device-card { height: 63px; padding: 9px 11px; gap: 9px; border-radius: 13px; }
+  .home-device-list .device-icon { width: 31px; height: 31px; border-radius: 9px; }
+  .home-device-list .device-card .name { font-size: 12px; }
+  .home-device-list .device-card .meta { font-size: 9px; margin-top: 3px; gap: 6px; }
+  .home-device-list .device-card .badge { font-size: 8px; padding: 1px 4px; }
+  .home-bar { flex: none; display: flex; gap: 6px; padding: 0 12px 8px; }
+  .home-bar .cc-btn { height: 32px; font-size: 10px; justify-content: center; }
+  .home-bar .cc-btn.primary { flex: 1.25; }
+  .home-bar .cc-btn { flex: .8; }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+</head>
+<body data-gp-back="index.html" data-gp-x="账号" data-gp-y="刷新设备">
+<header class="page-head">
+  <div>
+    <h1>双屏主页 · 下屏操作，上屏预览</h1>
+    <p>设备选择、连接、文件、观看、开机全部在下屏；上屏只显示选中设备详情，不参与手柄焦点。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Dual mode</span>
+    <span class="pill">单焦点树</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">上屏只读 · 所有动作在下屏</span>
+  <a href="single-landscape-home.html" style="margin-left:10px">单屏版 →</a>
+</div>
+
+<main class="duo">
+  <!-- ===================== TOP: read-only detail ===================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">上屏 · 832×468dp · 设备详情（只读）</div>
+    <section class="screen-top">
+      <div class="top-bg"></div>
+      <div class="top-content">
+        <div class="top-bar">
+          <div class="brand">
+            <span class="brand-mark">D</span>
+            <span>DuoRemote</span>
+            <span class="chip ghost" style="height:20px;font-size:9px">非官方</span>
+          </div>
+          <div class="row gap-8" style="color:var(--text-tertiary);font-size:11px">
+            <span class="status-dot online"></span>
+            <span>3 台设备在线</span>
+            <span style="opacity:.45">·</span>
+            <span class="mono">14:32</span>
+          </div>
+        </div>
+
+        <div class="top-main">
+          <div class="device-hero">
+            <div class="eyebrow">我的电脑 · 已选中</div>
+            <h1 class="device-title">客厅台式机</h1>
+            <div class="device-sub">
+              <span class="chip online"><span class="status-dot online" style="width:5px;height:5px;box-shadow:none"></span>在线</span>
+              <span class="chip ghost">Windows 11 专业版</span>
+              <span class="chip ghost">我的设备</span>
+            </div>
+
+            <div class="meta-grid">
+              <div class="meta-item">
+                <span class="k">显示器</span>
+                <span class="v mono">2560 × 1440 · 165 Hz</span>
+              </div>
+              <div class="meta-item">
+                <span class="k">上次连接</span>
+                <span class="v">今天 14:32</span>
+              </div>
+              <div class="meta-item">
+                <span class="k">网络</span>
+                <span class="v">局域网 · 5 GHz</span>
+              </div>
+              <div class="meta-item">
+                <span class="k">账号</span>
+                <span class="v">demo · 我的设备</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="home-status">
+            <div class="hs-title">准备远控</div>
+            <div class="hs-sub">下屏选中设备后，按 B 连接；连接后上屏切桌面、下屏切工具箱。</div>
+
+            <div class="pref-row hs-pref">
+              <span class="k">连接偏好</span>
+              <span class="v">1080p · 60 FPS · 高清</span>
+              <span class="chip ghost" style="height:20px;font-size:8px;margin-left:6px">下屏可调</span>
+            </div>
+
+            <div class="hs-flow">
+              <div class="hs-step"><div class="n">上屏</div><div class="v">远程桌面 / 状态</div></div>
+              <div class="hs-step"><div class="n">下屏</div><div class="v">设备列表 / 工具</div></div>
+            </div>
+
+            <div class="hs-foot">
+              <b>输入所有权：</b>手柄只操作下屏，上屏不进入焦点树；因此不需要按任何键在上下屏之间切换焦点。
+            </div>
+          </aside>
+        </div>
+
+        <div class="top-footer">
+          <div class="keys"><span>上屏只读 · 不参与手柄焦点</span></div>
+          <div>DuoRemote · 非官方 UU 远程客户端</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="hinge">DUO</div>
+
+  <!-- ===================== BOTTOM: the only control surface ===================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">下屏 · 640×480dp · 设备操作台</div>
+    <section class="screen-bottom">
+      <div class="bottom-content">
+        <div class="bottom-head">
+          <div class="grow">
+            <div class="title">设备</div>
+            <div class="sub"><span class="crumb"><b>主页</b><span class="sep">›</span>设备</span> · 3 台在线 · 1 台离线</div>
+          </div>
+          <a class="icon-btn" href="duo-account.html" title="账号"><svg class="icon"><use href="#i-user"/></svg></a>
+          <button class="icon-btn" title="刷新"><svg class="icon"><use href="#i-refresh"/></svg></button>
+          <a class="icon-btn" href="duo-settings.html" title="设置"><svg class="icon"><use href="#i-settings"/></svg></a>
+          <button class="icon-btn" title="远程协助"><svg class="icon"><use href="#i-link"/></svg></button>
+        </div>
+
+        <div class="device-list home-device-list">
+          <article class="device-card selected" data-gp-initial tabindex="0" data-gp-label="客厅台式机" data-gp-href="duo-stream.html">
+            <div class="device-icon"><svg class="icon"><use href="#i-monitor"/></svg></div>
+            <div class="grow">
+              <div class="name truncate">客厅台式机</div>
+              <div class="meta">
+                <span class="status-dot online"></span><span>在线</span>
+                <span class="sep"></span><span>Windows 11</span>
+                <span class="sep"></span><span>今天 14:32</span>
+              </div>
+            </div>
+            <span class="badge">我的</span>
+            <svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-chevron"/></svg>
+          </article>
+
+          <article class="device-card" tabindex="0" data-gp-label="客厅主机" data-gp-href="duo-stream.html">
+            <div class="device-icon"><svg class="icon"><use href="#i-monitor"/></svg></div>
+            <div class="grow">
+              <div class="name truncate">客厅主机</div>
+              <div class="meta">
+                <span class="status-dot online"></span><span>在线</span>
+                <span class="sep"></span><span>Windows 10</span>
+                <span class="sep"></span><span>昨天 21:08</span>
+              </div>
+            </div>
+            <span class="badge">我的</span>
+            <svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-chevron"/></svg>
+          </article>
+
+          <article class="device-card" tabindex="0" data-gp-label="MacBook Pro" data-gp-href="duo-stream.html">
+            <div class="device-icon"><svg class="icon"><use href="#i-mac"/></svg></div>
+            <div class="grow">
+              <div class="name truncate">MacBook Pro</div>
+              <div class="meta">
+                <span class="status-dot online"></span><span>在线</span>
+                <span class="sep"></span><span>macOS 15</span>
+                <span class="sep"></span><span>10 月 28 日</span>
+              </div>
+            </div>
+            <span class="badge">共享</span>
+            <svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-chevron"/></svg>
+          </article>
+
+          <article class="device-card offline" tabindex="0" data-gp-label="办公室 PC" data-gp-href="duo-stream.html">
+            <div class="device-icon"><svg class="icon"><use href="#i-monitor"/></svg></div>
+            <div class="grow">
+              <div class="name truncate">办公室 PC</div>
+              <div class="meta">
+                <span class="status-dot"></span><span>离线</span>
+                <span class="sep"></span><span>Windows 11</span>
+                <span class="sep"></span><span>11 月 06 日</span>
+              </div>
+            </div>
+            <span class="badge">我的</span>
+            <svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-chevron"/></svg>
+          </article>
+        </div>
+
+        <div class="home-bar">
+          <a class="cc-btn primary" href="duo-stream.html" style="text-decoration:none"><svg class="icon sm"><use href="#i-play"/></svg>连接</a>
+          <a class="cc-btn" href="duo-files.html" style="text-decoration:none"><svg class="icon sm"><use href="#i-folder"/></svg>文件</a>
+          <a class="cc-btn" href="duo-tools.html?tool=watch" style="text-decoration:none"><svg class="icon sm"><use href="#i-eye"/></svg>观看</a>
+          <a class="cc-btn" href="duo-tools.html?tool=wake" style="text-decoration:none"><svg class="icon sm"><use href="#i-power"/></svg>开机</a>
+          <a class="cc-btn" href="duo-tools.html" style="text-decoration:none"><svg class="icon sm"><use href="#i-more"/></svg>更多</a>
+        </div>
+
+        <div class="bottom-foot">
+          <div class="keys">
+            <span><kbd>B</kbd> 连接 / 选择</span>
+            <span><kbd>A</kbd> 返回</span>
+            <span><kbd>X</kbd> 账号</span>
+            <span><kbd>Y</kbd> 刷新</span>
+            <span><kbd>START</kbd> 说明</span>
+          </div>
+          <span>焦点：客厅台式机 · 上屏只读</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  设计说明：主页不再把“连接/文件/观看/开机”放在上屏动作卡里。上屏只做“选中即预览”，
+  下屏同时承担设备选择、连接和页面入口；这样手柄从进入主页到连接、再到文件/工具，都只在一棵焦点树里移动。
+  单屏版见 <a href="single-landscape-home.html">single-landscape-home.html</a>。
+</aside>
+</body>
+</html>

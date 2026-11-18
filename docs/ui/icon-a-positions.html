@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-zcode-design>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · A 方案光标与信号位置</title>
+<style>
+  :root {
+    --bg: #07090c; --panel: #0f141a; --line: #26313d;
+    --text: #e8edf4; --muted: #9aa8b7; --dim: #7f8c9b;
+    --accent: #6ccbff; --radius: 20px;
+    --sans: "Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+    --mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); color-scheme: dark; }
+  body {
+    margin: 0; color: var(--text); font-family: var(--sans);
+    background: radial-gradient(1000px 520px at 82% -8%, rgba(108,203,255,.09), transparent 62%), var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1600px; margin: 0 auto; padding: 34px 36px 38px; }
+  .masthead { display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+  .eyebrow { font: 600 10px/1.2 var(--mono); letter-spacing: .18em; color: var(--accent); text-transform: uppercase; }
+  h1 { margin: 11px 0 0; font-size: clamp(27px, 2.7vw, 40px); line-height: 1.12; letter-spacing: -.025em; font-weight: 650; }
+  .lede { max-width: 74ch; margin: 11px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.7; }
+  .meta { flex: none; text-align: right; color: var(--dim); font: 10.5px/1.75 var(--mono); }
+  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+  .card { padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(180deg, rgba(255,255,255,.024), transparent 26%), var(--panel); }
+  .card[data-variant="a1"] { border-color: rgba(108,203,255,.38); }
+  .card-head { display: flex; gap: 10px; align-items: center; }
+  .idx { flex: none; width: 31px; height: 31px; display: grid; place-items: center; border: 1px solid rgba(108,203,255,.35); border-radius: 9px; color: var(--accent); font: 600 10px/1 var(--mono); }
+  h2 { margin: 0; font-size: 17px; line-height: 1.2; letter-spacing: -.01em; }
+  .card-head p { margin: 3px 0 0; color: var(--dim); font-size: 10px; }
+  .card[data-variant="a1"] .card-head p { color: var(--accent); }
+  .mini { margin-left: auto; flex: none; width: 46px; height: 46px; }
+  .mini svg { width: 46px; height: 46px; display: block; border-radius: 11px; box-shadow: 0 0 0 1px rgba(255,255,255,.08); }
+  .stage { height: 206px; margin: 13px 0 11px; padding: 0 10px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.055); border-radius: 14px; background: radial-gradient(240px 180px at 50% 48%, rgba(108,203,255,.10), transparent 70%), #090d12; overflow: hidden; }
+  .stage svg { width: min(318px, 100%); height: auto; aspect-ratio: 344 / 172; display: block; }
+  .note { margin: 0; min-height: 62px; color: var(--muted); font-size: 12px; line-height: 1.65; }
+  .conclusion { display: flex; align-items: center; gap: 16px; margin-top: 18px; padding: 13px 16px; border: 1px solid rgba(108,203,255,.24); border-radius: 14px; background: rgba(108,203,255,.05); }
+  .conclusion b { color: var(--accent); font-size: 12px; white-space: nowrap; }
+  .conclusion span { color: var(--muted); font-size: 11.5px; line-height: 1.6; }
+  @media (max-width: 1520px) {
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 1180px) {
+    .page { padding: 28px 24px 34px; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .masthead { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .meta { text-align: left; }
+  }
+  @media (max-width: 700px) {
+    .page { padding: 22px 16px 30px; }
+    .grid { grid-template-columns: 1fr; }
+    .conclusion { align-items: flex-start; flex-direction: column; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">DuoRemote / A · Position</div>
+      <h1>光标与信号弧，四个落点。</h1>
+      <p class="lede">只动上屏的光标和信号，屏幕、下屏与 Bili-Duo 系列语言不变。上屏安全区约 12px；当前版本信号离上框只有 6px，这四版都在把它拉开。下图是上屏放大，右上角是整枚图标。</p>
+    </div>
+    <div class="meta">uuremote-duo<br>2026-11-18 · A 方案微调<br>上屏 320×152</div>
+  </header>
+
+  <section class="grid" aria-label="A 方案光标与信号位置">
+    <article class="card" data-variant="a1">
+  <div class="card-head">
+    <span class="idx">A1</span>
+    <div><h2>居中右上</h2><p>推荐</p></div>
+    <div class="mini"><svg viewBox="0 0 512 512" role="img" aria-label="Aa1">
+  <clipPath id="aClipa1m"><rect x="96" y="96" width="320" height="152" rx="40"/></clipPath>
+  <rect width="512" height="512" fill="#0b0d10"/>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <g clip-path="url(#aClipa1m)">
+    <path d="M204.98 146.94 Q206 138 213.36 143.18 L252.64 170.82 Q260 176 251.27 178.18 L244.73 179.82 Q236 182 240.27 189.92 L245.73 200.08 Q250 208 241.95 212.02 L238.05 213.98 Q230 218 225.73 210.08 L220.27 199.92 Q216 192 209.27 197.98 L204.73 202.02 Q198 208 199.02 199.06 Z" transform="translate(10 0)" fill="#eaf6ff"/>
+    <g fill="none" stroke="#6ccbff" stroke-linecap="round">
+      <path d="M298 160 Q298 140 278 140" stroke-width="7"/>
+      <path d="M314 160 Q314 124 278 124" stroke-width="7" opacity=".65"/>
+    </g>
+    <circle cx="278" cy="160" r="6" fill="#6ccbff"/>
+  </g>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="none" stroke="#eaf6ff" stroke-width="12"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <rect x="148" y="332" width="64" height="18" rx="8" fill="#eaf6ff"/>
+  <rect x="171" y="309" width="18" height="64" rx="8" fill="#eaf6ff"/>
+  <circle cx="340" cy="316" r="10" fill="#6ccbff"/>
+  <circle cx="314" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="366" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="340" cy="364" r="10" fill="#6ccbff"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="none" stroke="#6ccbff" stroke-width="12"/>
+</svg></div>
+  </div>
+  <div class="stage"><svg viewBox="84 84 344 172" role="img" aria-label="Aa1">
+  <clipPath id="aClipa1d"><rect x="96" y="96" width="320" height="152" rx="40"/></clipPath>
+  <rect width="512" height="512" fill="#0b0d10"/>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <g clip-path="url(#aClipa1d)">
+    <path d="M204.98 146.94 Q206 138 213.36 143.18 L252.64 170.82 Q260 176 251.27 178.18 L244.73 179.82 Q236 182 240.27 189.92 L245.73 200.08 Q250 208 241.95 212.02 L238.05 213.98 Q230 218 225.73 210.08 L220.27 199.92 Q216 192 209.27 197.98 L204.73 202.02 Q198 208 199.02 199.06 Z" transform="translate(10 0)" fill="#eaf6ff"/>
+    <g fill="none" stroke="#6ccbff" stroke-linecap="round">
+      <path d="M298 160 Q298 140 278 140" stroke-width="7"/>
+      <path d="M314 160 Q314 124 278 124" stroke-width="7" opacity=".65"/>
+    </g>
+    <circle cx="278" cy="160" r="6" fill="#6ccbff"/>
+  </g>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="none" stroke="#eaf6ff" stroke-width="12"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <rect x="148" y="332" width="64" height="18" rx="8" fill="#eaf6ff"/>
+  <rect x="171" y="309" width="18" height="64" rx="8" fill="#eaf6ff"/>
+  <circle cx="340" cy="316" r="10" fill="#6ccbff"/>
+  <circle cx="314" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="366" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="340" cy="364" r="10" fill="#6ccbff"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="none" stroke="#6ccbff" stroke-width="12"/>
+</svg></div>
+  <p class="note">光标保持中间偏左，信号缩到 36 并下移 8；视觉中心落在屏幕中间，顶距 28px。</p>
+</article><article class="card" data-variant="a2">
+  <div class="card-head">
+    <span class="idx">A2</span>
+    <div><h2>右侧</h2><p>顶部最松</p></div>
+    <div class="mini"><svg viewBox="0 0 512 512" role="img" aria-label="Aa2">
+  <clipPath id="aClipa2m"><rect x="96" y="96" width="320" height="152" rx="40"/></clipPath>
+  <rect width="512" height="512" fill="#0b0d10"/>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <g clip-path="url(#aClipa2m)">
+    <path d="M204.98 146.94 Q206 138 213.36 143.18 L252.64 170.82 Q260 176 251.27 178.18 L244.73 179.82 Q236 182 240.27 189.92 L245.73 200.08 Q250 208 241.95 212.02 L238.05 213.98 Q230 218 225.73 210.08 L220.27 199.92 Q216 192 209.27 197.98 L204.73 202.02 Q198 208 199.02 199.06 Z" transform="translate(6 0)" fill="#eaf6ff"/>
+    <g fill="none" stroke="#6ccbff" stroke-linecap="round">
+      <path d="M296 178 Q296 158 276 158" stroke-width="7"/>
+      <path d="M312 178 Q312 142 276 142" stroke-width="7" opacity=".65"/>
+    </g>
+    <circle cx="276" cy="178" r="6" fill="#6ccbff"/>
+  </g>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="none" stroke="#eaf6ff" stroke-width="12"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <rect x="148" y="332" width="64" height="18" rx="8" fill="#eaf6ff"/>
+  <rect x="171" y="309" width="18" height="64" rx="8" fill="#eaf6ff"/>
+  <circle cx="340" cy="316" r="10" fill="#6ccbff"/>
+  <circle cx="314" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="366" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="340" cy="364" r="10" fill="#6ccbff"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="none" stroke="#6ccbff" stroke-width="12"/>
+</svg></div>
+  </div>
+  <div class="stage"><svg viewBox="84 84 344 172" role="img" aria-label="Aa2">
+  <clipPath id="aClipa2d"><rect x="96" y="96" width="320" height="152" rx="40"/></clipPath>
+  <rect width="512" height="512" fill="#0b0d10"/>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <g clip-path="url(#aClipa2d)">
+    <path d="M204.98 146.94 Q206 138 213.36 143.18 L252.64 170.82 Q260 176 251.27 178.18 L244.73 179.82 Q236 182 240.27 189.92 L245.73 200.08 Q250 208 241.95 212.02 L238.05 213.98 Q230 218 225.73 210.08 L220.27 199.92 Q216 192 209.27 197.98 L204.73 202.02 Q198 208 199.02 199.06 Z" transform="translate(6 0)" fill="#eaf6ff"/>
+    <g fill="none" stroke="#6ccbff" stroke-linecap="round">
+      <path d="M296 178 Q296 158 276 158" stroke-width="7"/>
+      <path d="M312 178 Q312 142 276 142" stroke-width="7" opacity=".65"/>
+    </g>
+    <circle cx="276" cy="178" r="6" fill="#6ccbff"/>
+  </g>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="none" stroke="#eaf6ff" stroke-width="12"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <rect x="148" y="332" width="64" height="18" rx="8" fill="#eaf6ff"/>
+  <rect x="171" y="309" width="18" height="64" rx="8" fill="#eaf6ff"/>
+  <circle cx="340" cy="316" r="10" fill="#6ccbff"/>
+  <circle cx="314" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="366" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="340" cy="364" r="10" fill="#6ccbff"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="none" stroke="#6ccbff" stroke-width="12"/>
+</svg></div>
+  <p class="note">光标右移 6，信号放到右侧中部；顶距 46px，但不再是右上，更像侧向发射。</p>
+</article><article class="card" data-variant="a3">
+  <div class="card-head">
+    <span class="idx">A3</span>
+    <div><h2>紧凑右上</h2><p>留白多</p></div>
+    <div class="mini"><svg viewBox="0 0 512 512" role="img" aria-label="Aa3">
+  <clipPath id="aClipa3m"><rect x="96" y="96" width="320" height="152" rx="40"/></clipPath>
+  <rect width="512" height="512" fill="#0b0d10"/>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <g clip-path="url(#aClipa3m)">
+    <path d="M204.98 146.94 Q206 138 213.36 143.18 L252.64 170.82 Q260 176 251.27 178.18 L244.73 179.82 Q236 182 240.27 189.92 L245.73 200.08 Q250 208 241.95 212.02 L238.05 213.98 Q230 218 225.73 210.08 L220.27 199.92 Q216 192 209.27 197.98 L204.73 202.02 Q198 208 199.02 199.06 Z" transform="translate(8 2)" fill="#eaf6ff"/>
+    <g fill="none" stroke="#6ccbff" stroke-linecap="round">
+      <path d="M287 154 Q287 139 272 139" stroke-width="7"/>
+      <path d="M299 154 Q299 127 272 127" stroke-width="7" opacity=".65"/>
+    </g>
+    <circle cx="272" cy="154" r="6" fill="#6ccbff"/>
+  </g>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="none" stroke="#eaf6ff" stroke-width="12"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <rect x="148" y="332" width="64" height="18" rx="8" fill="#eaf6ff"/>
+  <rect x="171" y="309" width="18" height="64" rx="8" fill="#eaf6ff"/>
+  <circle cx="340" cy="316" r="10" fill="#6ccbff"/>
+  <circle cx="314" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="366" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="340" cy="364" r="10" fill="#6ccbff"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="none" stroke="#6ccbff" stroke-width="12"/>
+</svg></div>
+  </div>
+  <div class="stage"><svg viewBox="84 84 344 172" role="img" aria-label="Aa3">
+  <clipPath id="aClipa3d"><rect x="96" y="96" width="320" height="152" rx="40"/></clipPath>
+  <rect width="512" height="512" fill="#0b0d10"/>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <g clip-path="url(#aClipa3d)">
+    <path d="M204.98 146.94 Q206 138 213.36 143.18 L252.64 170.82 Q260 176 251.27 178.18 L244.73 179.82 Q236 182 240.27 189.92 L245.73 200.08 Q250 208 241.95 212.02 L238.05 213.98 Q230 218 225.73 210.08 L220.27 199.92 Q216 192 209.27 197.98 L204.73 202.02 Q198 208 199.02 199.06 Z" transform="translate(8 2)" fill="#eaf6ff"/>
+    <g fill="none" stroke="#6ccbff" stroke-linecap="round">
+      <path d="M287 154 Q287 139 272 139" stroke-width="7"/>
+      <path d="M299 154 Q299 127 272 127" stroke-width="7" opacity=".65"/>
+    </g>
+    <circle cx="272" cy="154" r="6" fill="#6ccbff"/>
+  </g>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="none" stroke="#eaf6ff" stroke-width="12"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <rect x="148" y="332" width="64" height="18" rx="8" fill="#eaf6ff"/>
+  <rect x="171" y="309" width="18" height="64" rx="8" fill="#eaf6ff"/>
+  <circle cx="340" cy="316" r="10" fill="#6ccbff"/>
+  <circle cx="314" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="366" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="340" cy="364" r="10" fill="#6ccbff"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="none" stroke="#6ccbff" stroke-width="12"/>
+</svg></div>
+  <p class="note">光标右移 8，信号缩到 27 并贴近光标；顶距 31px，信号存在感更弱。</p>
+</article><article class="card" data-variant="a4">
+  <div class="card-head">
+    <span class="idx">A4</span>
+    <div><h2>下移放大</h2><p>更重</p></div>
+    <div class="mini"><svg viewBox="0 0 512 512" role="img" aria-label="Aa4">
+  <clipPath id="aClipa4m"><rect x="96" y="96" width="320" height="152" rx="40"/></clipPath>
+  <rect width="512" height="512" fill="#0b0d10"/>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <g clip-path="url(#aClipa4m)">
+    <path d="M204.98 146.94 Q206 138 213.36 143.18 L252.64 170.82 Q260 176 251.27 178.18 L244.73 179.82 Q236 182 240.27 189.92 L245.73 200.08 Q250 208 241.95 212.02 L238.05 213.98 Q230 218 225.73 210.08 L220.27 199.92 Q216 192 209.27 197.98 L204.73 202.02 Q198 208 199.02 199.06 Z" transform="translate(6 4)" fill="#eaf6ff"/>
+    <g fill="none" stroke="#6ccbff" stroke-linecap="round">
+      <path d="M300 164 Q300 140 276 140" stroke-width="7"/>
+      <path d="M318 164 Q318 122 276 122" stroke-width="7" opacity=".65"/>
+    </g>
+    <circle cx="276" cy="164" r="6" fill="#6ccbff"/>
+  </g>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="none" stroke="#eaf6ff" stroke-width="12"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <rect x="148" y="332" width="64" height="18" rx="8" fill="#eaf6ff"/>
+  <rect x="171" y="309" width="18" height="64" rx="8" fill="#eaf6ff"/>
+  <circle cx="340" cy="316" r="10" fill="#6ccbff"/>
+  <circle cx="314" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="366" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="340" cy="364" r="10" fill="#6ccbff"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="none" stroke="#6ccbff" stroke-width="12"/>
+</svg></div>
+  </div>
+  <div class="stage"><svg viewBox="84 84 344 172" role="img" aria-label="Aa4">
+  <clipPath id="aClipa4d"><rect x="96" y="96" width="320" height="152" rx="40"/></clipPath>
+  <rect width="512" height="512" fill="#0b0d10"/>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <g clip-path="url(#aClipa4d)">
+    <path d="M204.98 146.94 Q206 138 213.36 143.18 L252.64 170.82 Q260 176 251.27 178.18 L244.73 179.82 Q236 182 240.27 189.92 L245.73 200.08 Q250 208 241.95 212.02 L238.05 213.98 Q230 218 225.73 210.08 L220.27 199.92 Q216 192 209.27 197.98 L204.73 202.02 Q198 208 199.02 199.06 Z" transform="translate(6 4)" fill="#eaf6ff"/>
+    <g fill="none" stroke="#6ccbff" stroke-linecap="round">
+      <path d="M300 164 Q300 140 276 140" stroke-width="7"/>
+      <path d="M318 164 Q318 122 276 122" stroke-width="7" opacity=".65"/>
+    </g>
+    <circle cx="276" cy="164" r="6" fill="#6ccbff"/>
+  </g>
+  <rect x="96" y="96" width="320" height="152" rx="40" fill="none" stroke="#eaf6ff" stroke-width="12"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="#0b0d10"/>
+  <rect x="148" y="332" width="64" height="18" rx="8" fill="#eaf6ff"/>
+  <rect x="171" y="309" width="18" height="64" rx="8" fill="#eaf6ff"/>
+  <circle cx="340" cy="316" r="10" fill="#6ccbff"/>
+  <circle cx="314" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="366" cy="340" r="10" fill="#6ccbff"/>
+  <circle cx="340" cy="364" r="10" fill="#6ccbff"/>
+  <rect x="96" y="264" width="320" height="152" rx="40" fill="none" stroke="#6ccbff" stroke-width="12"/>
+</svg></div>
+  <p class="note">光标下移 4，信号放大到 42；顶距 26px，视觉更重，但底部只剩 14px。</p>
+</article>
+  </section>
+
+  <div class="conclusion">
+    <b>我的选择：A1</b>
+    <span>它保留“光标右上”的关系，视觉中心落在屏幕中间，顶距 28px、底距 30px，最平衡。A2 顶部最松但信号变成右侧；A3 更紧凑；A4 信号最大、重心略低。</span>
+  </div>
+</main>
+</body>
+</html>

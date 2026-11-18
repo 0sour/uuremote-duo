@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 单屏控制中心</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  .sc-body { flex: 1; min-height: 0; display: flex; }
+  .sc-panel { display: none; flex-direction: column; }
+  .sc-panel.is-active { display: flex; }
+  .sc-content { padding: 8px 12px 8px; }
+  .sc-panel .cc-row { min-height: 40px; padding: 7px 9px; }
+  .sc-panel .cc-title { font-size: 12px; }
+  .sc-panel .cc-sub { font-size: 9px; }
+  .sc-panel .cc-group { margin-top: 6px; }
+  .sc-panel .cc-group-title { font-size: 8px; }
+  .sc-panel .cc-banner { font-size: 8px; min-height: 30px; }
+  .single-app-frame.size-bottom .sc-panel .cc-row { min-height: 38px; }
+  .single-app-frame.size-bottom .sc-content { padding: 6px 9px; }
+  .sc-foot { height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 10px; border-top: 1px solid rgba(46,55,66,.45); flex: none; }
+  .sc-foot .cc-btn { height: 26px; font-size: 9px; }
+  .sc-foot .cc-btn.primary { flex: 1; justify-content: center; }
+  .sc-foot .cc-btn.ghost { flex: 0 0 70px; justify-content: center; }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+<script src="single.js" defer></script>
+</head>
+<body data-gp-back="duo-control-center.html" data-gp-x="应用并重连" data-gp-y="恢复默认">
+<header class="page-head">
+  <div>
+    <h1>单屏控制中心 · 832×468 / 640×480</h1>
+    <p>832 宽左侧分类、右侧选项；640 宽分类变成顶部页签。所有选项在同一焦点树里，底部统一“应用并重连”。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Single · Control center</span>
+    <span class="pill">重连生效</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">宿主</span>
+  <button data-single-size="top" class="active">上屏 832×468</button>
+  <button data-single-size="bottom">下屏 640×480</button>
+  <a href="duo-control-center.html" style="margin-left:10px">双屏版 →</a>
+</div>
+
+<main class="duo">
+  <div class="screen-wrap">
+    <div class="screen-label" data-single-label>单屏 · 上屏 Activity · 832×468dp · 手柄焦点在此</div>
+    <section class="single-app-frame size-top" data-single-frame>
+      <div class="sa-bar">
+        <a class="icon-btn" href="duo-control-center.html" title="返回双屏版"><svg class="icon"><use href="#i-back"/></svg></a>
+        <div>
+          <div class="sa-title">控制中心</div>
+          <div class="sa-sub"><span class="crumb"><b>串流</b><span class="sep">›</span>控制中心</span> · 输入类立即生效 · 画面类重连生效</div>
+        </div>
+        <span class="cc-summary" style="font-size:9px">1920×1080 · 60 FPS · 高清</span>
+        <div class="sa-actions"><button class="icon-btn" title="关闭"><svg class="icon"><use href="#i-x"/></svg></button></div>
+      </div>
+
+      <div class="sa-tabs">
+        <button class="active" data-sa-tab="sc-display" data-gp-initial>画面与显示</button>
+        <button data-sa-tab="sc-peri">外设</button>
+        <button data-sa-tab="sc-sec">安全</button>
+        <button data-sa-tab="sc-more">更多</button>
+      </div>
+
+      <div class="sc-body">
+        <nav class="sa-side">
+          <div class="item active" data-sa-tab="sc-display" tabindex="0" data-gp-initial data-gp-label="画面与显示"><svg class="icon sm"><use href="#i-monitor"/></svg>画面与显示</div>
+          <div class="item" data-sa-tab="sc-peri" tabindex="0"><svg class="icon sm"><use href="#i-gamepad"/></svg>外设</div>
+          <div class="item" data-sa-tab="sc-sec" tabindex="0"><svg class="icon sm"><use href="#i-shield"/></svg>安全</div>
+          <div class="item" data-sa-tab="sc-more" tabindex="0"><svg class="icon sm"><use href="#i-more"/></svg>更多</div>
+          <div class="cc-note" style="margin-top:auto;padding:6px 4px">L1/R1 切分类<br>↑↓ 选择 · ←→ 改值</div>
+        </nav>
+
+        <div class="sa-content sc-content">
+          <!-- display -->
+          <div class="sc-panel is-active" data-sa-panel="sc-display">
+            <div class="cc-title">画面与显示</div>
+            <div class="cc-sub">分辨率、帧率、画质修改后需要重新协商串流；手柄与触摸板设置即时生效。</div>
+            <div class="cc-banner" style="margin-top:6px"><svg class="icon sm"><use href="#i-warning"/></svg>有 2 项待应用：分辨率 1920×1080 → 1280×720、帧率 60 → 30。</div>
+
+            <div class="cc-group">
+              <div class="cc-group-title">画面</div>
+              <div class="cc-row"><div class="grow"><div class="k">分辨率</div><div class="d">跟随本机 / 跟随被控端 / 指定</div></div><div class="cc-seg"><button>跟随本机</button><button class="on" data-gp-initial>1920×1080</button><button>1280×720</button></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">帧率上限</div><div class="d">被控端性能不足时会提示</div></div><div class="cc-seg"><button>30</button><button class="on">60</button><button>不设限</button></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">画质</div><div class="d">画质越高码率越大</div></div><div class="cc-seg"><button>流畅</button><button>清晰</button><button class="on">高清</button><button>超清</button><button>原画</button></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">码率上限</div><div class="d">自动或手动上限</div></div><div class="cc-seg"><button class="on">自动</button><button>20</button><button>50</button><button>100</button></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">缩放</div><div class="d">适应窗口 / 铺满 / 原始大小</div></div><div class="cc-seg"><button class="on">适应</button><button>铺满</button><button>原始</button></div></div>
+            </div>
+
+            <a class="cc-note" href="single-display.html" style="color:var(--accent);text-decoration:none;padding-top:4px">显示器 / 超级屏 / 虚拟屏 → 打开多屏页</a>
+          </div>
+
+          <!-- peripheral -->
+          <div class="sc-panel" data-sa-panel="sc-peri">
+            <div class="cc-title">外设</div>
+            <div class="cc-sub">手柄、触摸板、键盘都按“本机输入 → 远端”解释；切换直通/本地会先释放按住的键。</div>
+            <div class="cc-group">
+              <div class="cc-group-title">手柄</div>
+              <div class="cc-row"><div class="grow"><div class="k">手柄直通</div><div class="d">作为标准 Xbox 发送到电脑</div></div><div class="cc-switch on"></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">震动反馈</div><div class="d">解析 gpd_vibration 驱动本机马达</div></div><div class="cc-switch on"></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">手柄风格</div><div class="d">Standard / Retro；只改本机 UI 的 A/B 语义</div></div><div class="cc-seg"><button class="on">Standard</button><button>Retro</button></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">摇杆死区</div><div class="d">默认 16%；可放宽到 25%</div></div><div class="cc-seg"><button>8%</button><button class="on">16%</button><button>25%</button></div></div>
+            </div>
+            <div class="cc-group">
+              <div class="cc-group-title">触摸板与键盘</div>
+              <div class="cc-row"><div class="grow"><div class="k">触摸板灵敏度</div><div class="d">相对鼠标移动倍率</div></div><div class="cc-seg"><button>0.7×</button><button class="on">1.0×</button><button>1.4×</button></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">直接触摸视频</div><div class="d">单指点按左键、长按拖拽、双指滚动</div></div><div class="cc-switch on"></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">默认键盘</div><div class="d">内置拼音 / 系统输入法</div></div><div class="cc-seg"><button class="on">内置</button><button>系统</button></div></div>
+            </div>
+          </div>
+
+          <!-- security -->
+          <div class="sc-panel" data-sa-panel="sc-sec">
+            <div class="cc-title">安全</div>
+            <div class="cc-sub">安全类改动即时生效；仅观看会临时关闭剪贴板与麦克风。</div>
+            <div class="cc-group">
+              <div class="cc-group-title">输入与剪贴板</div>
+              <div class="cc-row"><div class="grow"><div class="k">同步剪贴板</div><div class="d">双向纯文本，≤2048 字</div></div><div class="cc-switch"></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">仅观看</div><div class="d">拦截键鼠/触屏/文字/手柄输入</div></div><div class="cc-switch"></div></div>
+            </div>
+            <div class="cc-group">
+              <div class="cc-group-title">隐私</div>
+              <div class="cc-row"><div class="grow"><div class="k">断开后锁屏<span class="tag">后续</span></div><div class="d">结束远控时锁定被控端</div></div><div class="cc-switch"></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">防窥 / 隐私屏<span class="tag">后续</span></div><div class="d">关闭被控端物理屏</div></div><div class="cc-switch"></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">指纹 / 自动解锁<span class="tag">后续</span></div><div class="d">需电脑端支持</div></div><span class="v">未配置</span></div>
+            </div>
+          </div>
+
+          <!-- more -->
+          <div class="sc-panel" data-sa-panel="sc-more">
+            <div class="cc-title">更多</div>
+            <div class="cc-sub">网络、文件、诊断和指南；不常用的工具放这里，不挤占画面页。</div>
+            <div class="cc-mini">
+              <div><div class="k">延迟</div><div class="big">18<small>ms</small></div></div>
+              <div><div class="k">帧率</div><div class="big">60<small>FPS</small></div></div>
+              <div><div class="k">码率</div><div class="big">42.6<small>Mbps</small></div></div>
+              <div><div class="k">丢包</div><div class="big">0.0<small>%</small></div></div>
+            </div>
+            <div class="cc-group">
+              <div class="cc-group-title">页面</div>
+              <div class="cc-row"><div class="grow"><div class="k">文件传输</div><div class="d">远程文件浏览、下载、上传与队列</div></div><a class="mini-btn" href="single-files.html">打开</a></div>
+              <div class="cc-row"><div class="grow"><div class="k">多屏 / 超级屏 / 虚拟屏</div><div class="d">屏幕页签、显示器切换、虚拟屏管理</div></div><a class="mini-btn" href="single-display.html">管理</a></div>
+              <div class="cc-row"><div class="grow"><div class="k">工具</div><div class="d">观看模式、远程开机、终端、端口映射</div></div><a class="mini-btn" href="single-tools.html">打开</a></div>
+              <div class="cc-row"><div class="grow"><div class="k">按键映射<span class="tag">参考</span></div><div class="d">实体手柄→键鼠模板；不做触屏虚拟按键/轮盘</div></div><a class="mini-btn" href="single-keymap.html">查看</a></div>
+            </div>
+            <div class="cc-group">
+              <div class="cc-group-title">帮助</div>
+              <div class="cc-row"><div class="grow"><div class="k">网络状态</div><div class="d">P2P 直连 · UDP · 会话 00:18:42</div></div><span class="v">查看</span></div>
+              <div class="cc-row"><div class="grow"><div class="k">反馈 / 关于</div><div class="d">导出脱敏诊断；GPL-3.0 · 非官方</div></div><span class="v">打开</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sc-foot">
+        <button class="cc-btn ghost">取消</button>
+        <button class="cc-btn primary">应用并重连 · 2 项</button>
+      </div>
+
+      <div class="sa-foot">
+        <div class="keys"><span><kbd>L1</kbd>/<kbd>R1</kbd> 切分类</span><span><kbd>↑</kbd><kbd>↓</kbd> 选择</span><span><kbd>←</kbd><kbd>→</kbd> 改值</span><span><kbd>B</kbd> 确认</span><span><kbd>A</kbd> 返回</span><span><kbd>START</kbd> 说明</span></div>
+        <span>单屏单焦点 · 画面类重连生效</span>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  单屏控制中心与双屏版共享同一份设置；832 宽左侧分类、右侧选项，640 宽分类变成顶部页签。
+  底部“应用并重连”在两种尺寸下都在同一屏内，不需要切到另一块屏确认。双屏版见 <a href="duo-control-center.html">duo-control-center.html</a>。
+</aside>
+</body>
+</html>

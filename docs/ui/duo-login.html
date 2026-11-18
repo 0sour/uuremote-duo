@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 扫码登录</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+</head>
+<body data-gp-back="index.html" data-gp-x="短信登录" data-gp-y="刷新二维码">
+<header class="page-head">
+  <div>
+    <h1>扫码登录 · 上屏二维码 / 下屏说明</h1>
+    <p>二维码由上屏展示，手机官方 UU 远程 App 扫码确认；下屏放下一步和短信登录入口。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Login</span>
+    <span class="pill">QR</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">二维码为占位图，实际由 ZXing 生成</span>
+  <a href="single-login.html" style="margin-left:10px">单屏版 →</a>
+</div>
+
+<main class="duo">
+  <!-- TOP -->
+  <div class="screen-wrap">
+    <div class="screen-label">上屏 · 832×468dp · 登录二维码（只读）</div>
+    <section class="screen-top">
+      <div class="top-bg"></div>
+      <div class="top-content">
+        <div class="top-bar">
+          <div class="brand">
+            <span class="brand-mark">D</span>
+            <span>DuoRemote</span>
+            <span class="chip ghost" style="height:20px;font-size:9px">非官方</span>
+          </div>
+          <div class="row gap-8" style="color:var(--text-tertiary);font-size:11px">
+            <span class="status-dot warning"></span>
+            <span>等待扫码</span>
+            <span class="mono">02:58</span>
+          </div>
+        </div>
+
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:34px;padding:0 40px">
+          <div style="display:flex;flex-direction:column;gap:12px;max-width:330px">
+            <div class="eyebrow">登录 UU 远程账号</div>
+            <h1 class="device-title" style="font-size:30px;margin-bottom:4px">用手机扫一下</h1>
+            <p class="muted" style="margin:0;font-size:13px;line-height:1.7">
+              打开手机上的官方 UU 远程 App，扫描右侧二维码并确认登录。
+              登录后会自动同步你账号下的电脑。
+            </p>
+            <div class="login-copy" style="padding:0;display:flex">
+              <div class="steps">
+                <div class="step"><span class="n">1</span><span>手机打开 UU 远程 App</span></div>
+                <div class="step"><span class="n">2</span><span>扫右侧二维码</span></div>
+                <div class="step"><span class="n">3</span><span>手机上点“确认登录”</span></div>
+              </div>
+            </div>
+            <div class="row gap-8" style="margin-top:2px">
+              <span class="chip ghost"><svg class="icon sm"><use href="#i-shield"/></svg>仅保存在本机</span>
+              <span class="chip ghost"><svg class="icon sm"><use href="#i-lock"/></svg>不保存二维码内容</span>
+            </div>
+          </div>
+
+          <div class="qr-card" style="width:260px;padding:20px;border-radius:20px">
+            <div class="qr-box" style="width:208px;height:208px">
+              <div class="qr-fake" style="width:172px;height:172px"><span class="find"></span></div>
+            </div>
+            <div class="qr-hint">二维码有效期 3 分钟<br>过期后按 Y 刷新</div>
+          </div>
+        </div>
+
+        <div class="top-footer">
+          <div class="keys"><span>上屏只读 · 不参与手柄焦点</span></div>
+          <div>二维码内容不会写入日志</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="hinge">DUO</div>
+
+  <!-- BOTTOM -->
+  <div class="screen-wrap">
+    <div class="screen-label">下屏 · 640×480dp · 登录说明与入口</div>
+    <section class="screen-bottom">
+      <div class="bottom-content">
+        <div class="bottom-head">
+          <div class="grow">
+            <div class="title">扫码登录</div>
+            <div class="sub">手机与 Duo 需在同一个网络/账号体系</div>
+          </div>
+          <button class="icon-btn" title="返回"><svg class="icon"><use href="#i-back"/></svg></button>
+        </div>
+
+        <div class="login-wrap" style="grid-template-columns:1.1fr .9fr">
+          <div class="login-copy">
+            <h2>两步连上你的电脑</h2>
+            <p>登录只用于同步设备列表和申请远控权限，不会读取账号里的其他数据。</p>
+            <div class="steps">
+              <div class="step"><span class="n">1</span><span>手机上确认扫码</span></div>
+              <div class="step"><span class="n">2</span><span>应用自动刷新设备列表</span></div>
+              <div class="step"><span class="n">3</span><span>选中电脑，按 B 连接</span></div>
+            </div>
+            <div class="note-box" style="margin-top:2px">
+              第一次使用会要求导入官方 UU TV 3.5.0 APK，用来提取本机请求签名材料；不会上传或写入日志。
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px;justify-content:center">
+            <div class="qr-card" style="padding:14px">
+              <div class="row gap-8" style="width:100%;justify-content:space-between">
+                <span class="chip online"><span class="status-dot online" style="width:5px;height:5px;box-shadow:none"></span>等待扫码</span>
+                <span class="mono tertiary" style="font-size:10px">02:58</span>
+              </div>
+              <div class="note-box" style="width:100%;text-align:left">
+                扫码后手机端会显示“登录确认”，点确认即可。若二维码过期，按 Y 或点下方按钮刷新。
+              </div>
+              <button class="pad-btn primary" style="width:100%;height:38px" data-gp-initial data-gp-label="刷新二维码">刷新二维码</button>
+            </div>
+            <a class="pad-btn" href="duo-login-sms.html" style="height:40px;text-decoration:none;justify-content:center"><svg class="icon sm"><use href="#i-phone"/></svg>使用短信验证码登录</a>
+          </div>
+        </div>
+
+        <div class="bottom-foot">
+          <div class="keys">
+            <span><kbd>Y</kbd> 刷新</span>
+            <span><kbd>X</kbd> 短信登录</span>
+            <span><kbd>A</kbd> 返回</span>
+          </div>
+          <span>登录状态保存在本机加密存储</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  也可把二维码放在下屏（640×480dp 也能放 176dp 二维码），但上屏更大、扫码更方便，因此设计稿采用“上屏二维码、下屏说明”。
+  <a href="duo-login-sms.html">查看短信登录状态 →</a>
+</aside>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 多屏 / 超级屏 / 虚拟屏</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  [hidden] { display: none !important; }
+  .display-stage { position: absolute; inset: 0; background: #000; }
+  .display-stage .wallpaper { opacity: .9; }
+  .display-note {
+    position: absolute; left: 50%; bottom: 52px; transform: translateX(-50%);
+    height: 26px; padding: 0 10px; border-radius: var(--radius-pill);
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(8,12,17,.66); border: 1px solid rgba(255,255,255,.14);
+    color: rgba(232,237,244,.72); font-size: 9px; white-space: nowrap;
+  }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+</head>
+<body data-gp-back="duo-control-center.html?panel=display" data-gp-x="新建虚拟屏" data-gp-y="删除当前">
+<header class="page-head">
+  <div>
+    <h1>多屏协作 · 显示器 / 超级屏 / 虚拟屏</h1>
+    <p>上屏只做当前屏幕预览；下屏屏幕列表/页签负责切换与创建虚拟屏，超级屏把多屏内容合并到一个窗口。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Displays</span>
+    <span class="pill">最多 5 屏</span>
+    <span class="pill">虚拟屏 ≤ 3</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">入口：串流控制中心 → 画面与显示</span>
+  <a href="single-display.html" style="margin-left:10px">单屏版 →</a>
+</div>
+
+<main class="duo">
+  <!-- ===================== TOP: multi-screen video ===================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">上屏 · 当前屏幕预览（只读）</div>
+    <section class="screen-top">
+      <div class="display-stage">
+        <div class="wallpaper"></div>
+        <div class="desktop-window">
+          <div class="win-bar"><span class="win-dot"></span><span class="win-dot"></span><span class="win-dot"></span><span class="win-title">屏幕 1 — 主显示器</span></div>
+          <div class="win-body">
+            <div class="win-line w36"></div><div class="win-line w80"></div><div class="win-line w60"></div>
+            <div class="win-grid"><div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div></div>
+          </div>
+        </div>
+        <div class="taskbar"><span class="tb-icon"></span><span class="tb-icon"></span><span class="tb-icon"></span><span class="tb-icon" style="margin-left:6px;opacity:.55"></span><span class="tb-time">14:32</span></div>
+
+        <div class="display-tabs" style="pointer-events:none">
+          <span class="display-tab active">屏幕 1 · 主屏</span>
+          <span class="display-tab">屏幕 2</span>
+          <span class="display-tab">虚拟屏 1</span>
+          <span class="display-tab">超级屏</span>
+        </div>
+        <div class="top-note"><svg class="icon sm"><use href="#i-monitor"/></svg>上屏预览 · 屏幕切换在下屏</div>
+        <div class="display-alert"><svg class="icon sm"><use href="#i-warning"/></svg>超级屏已开启 · 被控端物理屏已关闭</div>
+        <div class="display-note"><svg class="icon sm"><use href="#i-cast"/></svg>屏幕切换、创建虚拟屏、超级屏参数全部在下屏</div>
+        <div class="stat-chip"><span class="dot"></span> 3840×2160 · 144 FPS · 12 ms</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="hinge">DUO</div>
+
+  <!-- ===================== BOTTOM: display panel ===================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">下屏 · 640×480dp · 画面与显示</div>
+    <section class="screen-bottom">
+      <div class="bottom-content">
+        <div class="bottom-head">
+          <div class="grow"><div class="title">画面与显示</div><div class="sub"><span class="crumb"><b>串流</b><span class="sep">›</span><a href="duo-control-center.html?panel=display">控制中心</a><span class="sep">›</span><b>多屏</b></span> · 主屏 2560×1440</div></div>
+          <span class="chip warning" style="height:22px;font-size:9px">物理屏已关闭</span>
+          <button class="icon-btn" title="返回"><svg class="icon"><use href="#i-x"/></svg></button>
+        </div>
+
+        <div class="tabs" data-tab-group>
+          <button class="tab active" data-tab="d-mon">显示器</button>
+          <button class="tab" data-tab="d-super">超级屏</button>
+          <button class="tab" data-tab="d-virt">虚拟屏</button>
+        </div>
+
+        <div class="tool-frame" style="padding-top:9px">
+          <!-- ===== displays ===== -->
+          <div class="tool-panel" data-panel="d-mon">
+            <div class="display-list">
+              <div class="display-card active" tabindex="0" data-gp-initial data-gp-label="屏幕 1 · 主屏">
+                <div class="thumb">16:9</div>
+                <div class="grow"><div class="nm">屏幕 1 · 主屏</div><div class="meta">2560×1440 · 165 Hz · 100%</div></div>
+                <div class="right"><span class="chip accent" style="height:20px;font-size:8px">当前</span></div>
+              </div>
+              <div class="display-card">
+                <div class="thumb">16:9</div>
+                <div class="grow"><div class="nm">屏幕 2</div><div class="meta">1920×1080 · 60 Hz · 100%</div></div>
+                <div class="right"><span class="chip ghost" style="height:20px;font-size:8px">扩展</span></div>
+              </div>
+              <div class="display-card">
+                <div class="thumb" style="border-style:dashed;color:var(--accent)">+</div>
+                <div class="grow"><div class="nm">虚拟屏 1</div><div class="meta">2560×1440 · 扩展模式 · 跟随主屏</div></div>
+                <div class="right"><span class="chip ghost" style="height:20px;font-size:8px">新建</span></div>
+              </div>
+            </div>
+
+            <div class="cc-mini">
+              <div><div class="k">屏幕</div><div class="big">3<small>/ 5</small></div></div>
+              <div><div class="k">虚拟屏</div><div class="big">1<small>/ 3</small></div></div>
+              <div><div class="k">当前</div><div class="big" style="font-size:12px">屏幕 1</div></div>
+            </div>
+
+            <div class="cc-group">
+              <div class="cc-group-title">当前屏参数</div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">分辨率 / 刷新率</div><div class="d">被控端公布的模式 · 缩放 100% · H.264</div></div>
+                <div class="v">2560×1440 · 165Hz</div>
+              </div>
+            </div>
+
+            <div class="display-actions" style="margin-top:auto">
+              <button class="cc-btn primary">切换到此屏</button>
+              <button class="cc-btn">跟随当前显示屏</button>
+            </div>
+            <div class="note-box">已有屏幕通过下屏列表切换；按住页签拖出可变成独立窗口。虚拟屏创建入口也在下屏“虚拟屏”页签。</div>
+          </div>
+
+          <!-- ===== super screen ===== -->
+          <div class="tool-panel" data-panel="d-super" hidden>
+            <div class="cc-banner">
+              <svg class="icon sm"><use href="#i-warning"/></svg>
+              进入超级屏会关闭被控端物理屏，画面只显示在一个窗口；退出后恢复。
+            </div>
+            <div class="cc-group">
+              <div class="cc-group-title">超级屏</div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">分辨率</div><div class="d">最高 4K；Mac 被控端最高 4K/60</div></div>
+                <div class="cc-seg"><button>2560×1440</button><button class="on">3840×2160</button></div>
+              </div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">帧率</div><div class="d">Windows 被控端最高 144</div></div>
+                <div class="cc-seg"><button>60</button><button>120</button><button class="on">144</button></div>
+              </div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">缩放</div><div class="d">跟随主屏或指定比例</div></div>
+                <div class="cc-seg"><button class="on">100%</button><button>125%</button><button>150%</button></div>
+              </div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">内容</div><div class="d">多屏内容合并到一个窗口</div></div>
+                <div class="v">合并 2 屏</div>
+              </div>
+            </div>
+            <div class="display-actions" style="margin-top:auto">
+              <button class="cc-btn danger">退出超级屏</button>
+              <button class="cc-btn primary">应用并重连</button>
+            </div>
+            <div class="note-box">超级屏与虚拟屏互斥；远程协助模式不支持超级屏。</div>
+          </div>
+
+          <!-- ===== virtual ===== -->
+          <div class="tool-panel" data-panel="d-virt" hidden>
+            <div class="display-list">
+              <div class="display-card active">
+                <div class="thumb">16:9</div>
+                <div class="grow"><div class="nm">虚拟屏 1</div><div class="meta">2560×1440 · 扩展 · 跟随主屏</div></div>
+                <div class="right"><span class="chip accent" style="height:20px;font-size:8px">当前</span></div>
+              </div>
+              <div class="display-card">
+                <div class="thumb">16:9</div>
+                <div class="grow"><div class="nm">虚拟屏 2</div><div class="meta">1920×1080 · 扩展 · 60 Hz</div></div>
+                <div class="right"><span class="chip ghost" style="height:20px;font-size:8px">离线</span></div>
+              </div>
+            </div>
+            <div class="cc-group">
+              <div class="cc-group-title">新建虚拟屏</div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">分辨率</div><div class="d">默认跟随被控端主屏</div></div>
+                <div class="v">2560×1440</div>
+              </div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">显示模式</div><div class="d">默认扩展</div></div>
+                <div class="cc-seg"><button class="on">扩展</button><button>复制</button></div>
+              </div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">数量限制</div><div class="d">虚拟屏 2 / 3 · 物理+虚拟 4 / 5</div></div>
+                <div class="v">还可建 1</div>
+              </div>
+            </div>
+            <div class="display-actions" style="margin-top:auto">
+              <button class="cc-btn primary"><svg class="icon sm"><use href="#i-plus"/></svg>新建虚拟屏</button>
+              <button class="cc-btn danger">删除当前</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-foot">
+          <div class="keys"><span><kbd>L1</kbd>/<kbd>R1</kbd> 切页</span><span><kbd>B</kbd> 切换</span><span><kbd>X</kbd> 新建</span><span><kbd>Y</kbd> 删除</span><span><kbd>A</kbd> 返回</span></div>
+          <span>超级屏与虚拟屏互斥</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  设计说明：本页覆盖官方的“多屏幕控制 / 虚拟屏 / 超级屏”。官方的屏幕页签在双屏版里收进下屏，上屏只做当前屏预览；
+  创建虚拟屏走 `+`，删除走页签 `×` 或本页；超级屏进入/退出需要二次确认。
+</aside>
+</body>
+</html>

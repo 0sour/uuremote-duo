@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 单屏横屏主页</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  .single-frame {
+    zoom: var(--zoom);
+    width: 832px; height: 468px;
+    border-radius: 18px; overflow: hidden;
+    background: var(--bg);
+    border: 1px solid #2A323D;
+    box-shadow: 0 24px 70px rgba(0,0,0,.55), 0 0 0 6px #0A0C0F;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .single-frame.size-bottom { width: 640px; height: 480px; }
+  .single-topbar {
+    height: 48px; padding: 0 16px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid rgba(46,55,66,.55);
+    flex: none;
+  }
+  .single-frame.size-bottom .single-topbar { height: 44px; padding: 0 12px; }
+  .single-topbar .sub { font-size: 10px; color: var(--text-tertiary); margin-top: 1px; }
+  .single-topbar .actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+  .single-main {
+    flex: 1; min-height: 0;
+    display: grid; grid-template-columns: 56% 44%;
+    gap: 12px; padding: 10px 14px 8px;
+  }
+  .single-frame.size-bottom .single-main { gap: 10px; padding: 8px 10px 6px; grid-template-columns: 55% 45%; }
+  .single-list { min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+  .single-list-head { display: flex; align-items: baseline; justify-content: space-between; padding: 0 2px 2px; }
+  .single-list-head .t { font-size: 12px; font-weight: 600; }
+  .single-list-head .s { font-size: 10px; color: var(--text-tertiary); }
+  .single-list .device-list { padding: 0; overflow: hidden; gap: 8px; }
+  .single-frame.size-bottom .single-list .device-list { gap: 7px; }
+  .single-frame.size-bottom .device-card { height: 64px; padding: 9px 11px; gap: 9px; border-radius: 12px; }
+  .single-frame.size-bottom .device-card .device-icon { width: 32px; height: 32px; border-radius: 9px; }
+  .single-frame.size-bottom .device-card .name { font-size: 12px; }
+  .single-frame.size-bottom .device-card .meta { font-size: 10px; margin-top: 3px; }
+  .single-frame.size-bottom .device-card .badge { display: none; }
+  .single-detail {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--outline);
+    background: linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.012));
+    padding: 16px; min-width: 0;
+    display: flex; flex-direction: column; gap: 12px;
+    position: relative; overflow: hidden;
+  }
+  .single-frame.size-bottom .single-detail { padding: 12px; gap: 9px; }
+  .single-detail::before {
+    content: ""; position: absolute; right: -40px; top: -40px; width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(108,203,255,.16), transparent 68%);
+    pointer-events: none;
+  }
+  .single-detail .eyebrow { position: relative; }
+  .single-detail .detail-title {
+    position: relative; flex: none;
+    font-size: 24px; line-height: 1.15; font-weight: 650; letter-spacing: -.02em;
+    margin: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .single-frame.size-bottom .single-detail .detail-title { font-size: 19px; }
+  .single-detail .detail-chips { display: flex; gap: 6px; flex-wrap: wrap; position: relative; flex: none; }
+  .single-detail .detail-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; position: relative; flex: none; }
+  .single-frame.size-bottom .single-detail .detail-meta { grid-template-columns: 1fr 1fr; gap: 5px 8px; }
+  .single-frame.size-bottom .single-detail .meta-item .v { font-size: 10px; }
+  .single-detail .meta-item .k { font-size: 9px; }
+  .single-detail .meta-item .v { font-size: 11px; }
+  .single-detail .pref-row { flex: none; }
+  .single-detail .quick-strip { flex: none; }
+  .single-detail .detail-action { margin-top: auto; position: relative; flex: none; }
+  .single-detail .detail-action .hint { display: none; }
+  .single-detail .connect-row { display: flex; align-items: center; gap: 9px; }
+  .single-detail .connect-row .keycap { min-width: 28px; height: 28px; padding: 0 8px; font-size: 11px; }
+  .quick-strip { display: flex; gap: 6px; }
+  .quick-strip a {
+    flex: 1; height: 44px; border-radius: 9px; border: 1px solid var(--outline);
+    background: var(--surface-1); color: var(--text-secondary);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    font-size: 8px; text-decoration: none;
+  }
+  .quick-strip a:hover { border-color: var(--outline-strong); color: var(--text-primary); }
+  .single-foot {
+    height: 28px; padding: 0 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    color: var(--text-tertiary); font-size: 10px;
+    border-top: 1px solid rgba(46,55,66,.45);
+    flex: none;
+  }
+  .single-frame.size-bottom .single-foot { padding: 0 10px; font-size: 9px; }
+  .single-frame.size-bottom .single-foot .keys { gap: 7px; }
+  .single-frame.size-bottom .single-foot kbd { font-size: 8px; padding: 1px 3px; }
+  .host-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 22px; padding: 0 8px; border-radius: var(--radius-pill);
+    border: 1px solid var(--outline); color: var(--text-secondary);
+    font-size: 9px; background: var(--surface-1);
+  }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+</head>
+<body data-gp-back="index.html" data-gp-x="账号" data-gp-y="刷新设备">
+<header class="page-head">
+  <div>
+    <h1>单屏横屏主页 · 上屏 / 下屏同一套 UI</h1>
+    <p>Duo 单屏模式必须是横屏；上屏 Activity（832×468dp）和下屏 Presentation（640×480dp）都能作为唯一屏幕。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Single · Landscape</span>
+    <span class="pill">B 连接 · A 返回</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">宿主</span>
+  <button data-single-size="top" class="active">上屏 832×468</button>
+  <button data-single-size="bottom">下屏 640×480</button>
+</div>
+
+<main class="duo">
+  <div class="screen-wrap">
+    <div class="screen-label" data-size-label>单屏 · 上屏 Activity · 832×468dp</div>
+    <div class="single-frame size-top" data-single-frame>
+      <div class="single-topbar">
+        <span class="brand-mark" style="width:26px;height:26px;border-radius:8px;font-size:12px">D</span>
+        <div>
+          <div style="font-size:16px;font-weight:650;line-height:1.1">DuoRemote</div>
+          <div class="sub">非官方 UU 远程客户端</div>
+        </div>
+        <span class="host-chip" data-host-chip><svg class="icon sm"><use href="#i-monitor"/></svg>上屏 Activity</span>
+        <div class="actions">
+          <span class="chip online" style="height:22px;font-size:9px"><span class="status-dot online" style="width:5px;height:5px;box-shadow:none"></span>demo</span>
+          <a class="icon-btn" href="duo-account.html" title="账号"><svg class="icon"><use href="#i-user"/></svg></a>
+          <button class="icon-btn" title="远程协助"><svg class="icon"><use href="#i-link"/></svg></button>
+          <button class="icon-btn" title="刷新"><svg class="icon"><use href="#i-refresh"/></svg></button>
+          <button class="icon-btn" title="设置"><svg class="icon"><use href="#i-settings"/></svg></button>
+        </div>
+      </div>
+
+      <div class="single-main">
+        <section class="single-list">
+          <div class="single-list-head">
+            <span class="t">我的电脑</span>
+            <span class="s">3 台在线 · 1 台离线</span>
+          </div>
+          <div class="device-list">
+            <article class="device-card selected" tabindex="0" data-gp-initial data-gp-label="客厅台式机" data-gp-href="duo-stream.html">
+              <div class="device-icon"><svg class="icon"><use href="#i-monitor"/></svg></div>
+              <div class="grow">
+                <div class="name truncate">客厅台式机</div>
+                <div class="meta"><span class="status-dot online"></span><span>在线</span><span class="sep"></span><span>Windows 11</span><span class="sep"></span><span>今天 14:32</span></div>
+              </div>
+              <span class="badge">我的</span>
+              <svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-chevron"/></svg>
+            </article>
+
+            <article class="device-card" tabindex="0" data-gp-href="duo-stream.html">
+              <div class="device-icon"><svg class="icon"><use href="#i-monitor"/></svg></div>
+              <div class="grow">
+                <div class="name truncate">客厅主机</div>
+                <div class="meta"><span class="status-dot online"></span><span>在线</span><span class="sep"></span><span>Windows 10</span><span class="sep"></span><span>昨天 21:08</span></div>
+              </div>
+              <span class="badge">我的</span>
+              <svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-chevron"/></svg>
+            </article>
+
+            <article class="device-card" tabindex="0" data-gp-href="duo-stream.html">
+              <div class="device-icon"><svg class="icon"><use href="#i-mac"/></svg></div>
+              <div class="grow">
+                <div class="name truncate">MacBook Pro</div>
+                <div class="meta"><span class="status-dot online"></span><span>在线</span><span class="sep"></span><span>macOS 15</span><span class="sep"></span><span>10 月 28 日</span></div>
+              </div>
+              <span class="badge">共享</span>
+              <svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-chevron"/></svg>
+            </article>
+
+            <article class="device-card offline" tabindex="0" data-gp-href="duo-stream.html">
+              <div class="device-icon"><svg class="icon"><use href="#i-monitor"/></svg></div>
+              <div class="grow">
+                <div class="name truncate">办公室 PC</div>
+                <div class="meta"><span class="status-dot"></span><span>离线</span><span class="sep"></span><span>Windows 11</span><span class="sep"></span><span>11 月 06 日</span></div>
+              </div>
+              <span class="badge">我的</span>
+              <svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-chevron"/></svg>
+            </article>
+          </div>
+        </section>
+
+        <aside class="single-detail">
+          <div class="eyebrow">已选中</div>
+          <h1 class="detail-title">客厅台式机</h1>
+          <div class="detail-chips">
+            <span class="chip online" style="height:22px;font-size:9px"><span class="status-dot online" style="width:5px;height:5px;box-shadow:none"></span>在线</span>
+            <span class="chip ghost" style="height:22px;font-size:9px">Windows 11</span>
+          </div>
+          <div class="detail-meta">
+            <div class="meta-item"><span class="k">显示器</span><span class="v mono">2560×1440 · 165Hz</span></div>
+            <div class="meta-item"><span class="k">上次连接</span><span class="v">今天 14:32</span></div>
+            <div class="meta-item"><span class="k">网络</span><span class="v">局域网 · 5GHz</span></div>
+            <div class="meta-item"><span class="k">账号</span><span class="v">demo · 我的设备</span></div>
+          </div>
+          <div class="pref-row">
+            <span class="k">连接偏好</span>
+            <span class="v">1080p · 60 · 高清</span>
+            <a href="duo-settings.html">调整</a>
+          </div>
+          <div class="quick-strip">
+            <a href="duo-files.html"><svg class="icon sm"><use href="#i-folder"/></svg><span>文件</span></a>
+            <a href="duo-tools.html?tool=watch"><svg class="icon sm"><use href="#i-eye"/></svg><span>观看</span></a>
+            <a href="duo-tools.html?tool=wake"><svg class="icon sm"><use href="#i-power"/></svg><span>开机</span></a>
+            <a href="duo-tools.html?tool=wake"><svg class="icon sm"><use href="#i-refresh"/></svg><span>重启</span></a>
+          </div>
+          <div class="detail-action">
+            <div class="hint">连接后视频铺满，工具箱从底部抽屉展开；手柄默认直通电脑。</div>
+            <div class="connect-row">
+              <span class="keycap accent">B</span>
+              <span style="font-size:12px;font-weight:600">连接</span>
+              <span style="width:1px;height:16px;background:var(--outline);margin:0 2px"></span>
+              <span class="keycap">A</span>
+              <span style="font-size:11px;color:var(--text-secondary)">返回</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="single-foot">
+        <div class="keys">
+          <span><kbd>B</kbd> 连接</span>
+          <span><kbd>A</kbd> 返回</span>
+          <span><kbd>Y</kbd> 刷新</span>
+          <span><kbd>X</kbd> 账号</span>
+          <span><kbd>START</kbd> 说明</span>
+        </div>
+        <span>焦点：客厅台式机</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:10px">
+  单屏跑下屏时，整个 UI 在 `Presentation` 里，系统 Back/IME 由 Presentation 自己处理；
+  上屏 Activity 只做黑色宿主。单屏跑上屏时就是普通 Activity。两套都用同一个 `InputRouter`，
+  主页 B 连接/A 返回；串流时手柄默认直通，远端 Xbox 映射不受本地 B/A 语义影响。
+  <a href="single-landscape-stream.html">查看单屏串流 →</a>
+</aside>
+
+<script>
+  (function () {
+    const frame = document.querySelector("[data-single-frame]");
+    const label = document.querySelector("[data-size-label]");
+    const host = document.querySelector("[data-host-chip]");
+    document.querySelectorAll("[data-single-size]").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("[data-single-size]").forEach((x) => x.classList.toggle("active", x === b));
+        const bottom = b.dataset.singleSize === "bottom";
+        frame.classList.toggle("size-bottom", bottom);
+        frame.classList.toggle("size-top", !bottom);
+        const text = bottom
+          ? "单屏 · 下屏 Presentation · 640×480dp"
+          : "单屏 · 上屏 Activity · 832×468dp";
+        if (label.firstChild && label.firstChild.nodeType === 3) label.firstChild.nodeValue = text;
+        else label.insertBefore(document.createTextNode(text), label.firstChild);
+        if (window.gpFocus) window.gpFocus.refresh();
+        host.innerHTML = bottom
+          ? '<svg class="icon sm"><use href="#i-touchpad"/></svg>下屏 Presentation'
+          : '<svg class="icon sm"><use href="#i-monitor"/></svg>上屏 Activity';
+      });
+    });
+    const initialSize = new URLSearchParams(location.search).get("size");
+    if (initialSize === "bottom") {
+      document.querySelector('[data-single-size="bottom"]')?.click();
+    }
+  })();
+</script>
+</body>
+</html>

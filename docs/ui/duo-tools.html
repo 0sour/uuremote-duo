@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 工具（观看模式 / 远程开机 / 终端 / 端口映射）</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  [hidden] { display: none !important; }
+  .tool-stage { position: absolute; inset: 0; background: #000; }
+  .tool-stage .wallpaper { opacity: .9; }
+  .annotate-bar {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 6px; padding: 5px;
+    border-radius: 12px; border: 1px solid rgba(255,255,255,.14);
+    background: rgba(8,12,17,.72); backdrop-filter: blur(10px);
+  }
+  .annotate-bar button {
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid transparent;
+    background: transparent; color: rgba(232,237,244,.68); display: grid; place-items: center; cursor: pointer;
+  }
+  .annotate-bar button.active { background: var(--accent-soft); border-color: rgba(108,203,255,.34); color: var(--accent); }
+  .wake-card {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: 330px; border-radius: 18px; border: 1px solid rgba(255,255,255,.14);
+    background: rgba(15,21,28,.88); backdrop-filter: blur(10px); padding: 18px;
+    text-align: center;
+  }
+  .wake-card .big-power {
+    width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 10px;
+    display: grid; place-items: center; color: var(--accent);
+    background: var(--accent-soft); border: 1px solid rgba(108,203,255,.35);
+  }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const buttons = [...document.querySelectorAll('[data-tool]')];
+    const topPanels = [...document.querySelectorAll('[data-tool-top]')];
+    const bodyPanels = [...document.querySelectorAll('[data-tool-body]')];
+    function open(name) {
+      buttons.forEach(b => b.classList.toggle('active', b.dataset.tool === name));
+      topPanels.forEach(p => { p.hidden = p.dataset.toolTop !== name; });
+      bodyPanels.forEach(p => { p.hidden = p.dataset.toolBody !== name; });
+    }
+    buttons.forEach(b => b.addEventListener('click', () => open(b.dataset.tool)));
+    document.querySelectorAll('[data-jump-tool]').forEach(b => {
+      b.addEventListener('click', () => open(b.dataset.jumpTool));
+    });
+    open(new URLSearchParams(location.search).get('tool') || 'watch');
+  });
+</script>
+</head>
+<body data-gp-back="duo-control-center.html?panel=more" data-gp-x="确认" data-gp-y="返回">
+<header class="page-head">
+  <div>
+    <h1>工具 · 观看模式 / 远程开机 / 终端 / 端口映射</h1>
+    <p>官方把这些放在“控制中心 → 工具”或“操作 → 更多”；本页作为 Duo 的工具中心，上屏预览、下屏操作。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Tools</span>
+    <span class="pill">P1 / P2</span>
+    <span class="pill">安全确认</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">工具</span>
+  <button data-jump-tool="watch" class="active">观看模式</button>
+  <button data-jump-tool="wake">远程开机</button>
+  <button data-jump-tool="terminal">终端</button>
+  <button data-jump-tool="ports">端口映射</button>
+  <span class="label" style="margin-left:auto">入口：控制中心 → 更多 / 主页动作条</span>
+  <a href="single-tools.html" style="margin-left:10px">单屏版 →</a>
+</div>
+
+<main class="duo">
+  <!-- ===================== TOP: tool preview ===================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">上屏 · 832×468dp · 工具预览（只读）</div>
+    <section class="screen-top">
+      <div class="tool-stage">
+        <!-- watch -->
+        <div data-tool-top="watch">
+          <div class="wallpaper"></div>
+          <div class="desktop-window" style="left:110px;top:48px;width:560px;height:300px">
+            <div class="win-bar"><span class="win-dot"></span><span class="win-dot"></span><span class="win-dot"></span><span class="win-title">同事的桌面 — 演示中</span></div>
+            <div class="win-body"><div class="win-line w36"></div><div class="win-line w80"></div><div class="win-line w60"></div><div class="win-grid"><div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div></div></div>
+          </div>
+          <div class="stat-chip"><span class="dot" style="background:var(--warning)"></span> 仅观看 · 1920×1080 · 60 FPS</div>
+          <div class="top-note" style="right:14px;top:12px"><svg class="icon sm"><use href="#i-eye"/></svg>输入已锁定 · 可批注</div>
+
+          <div class="display-note" style="bottom:46px"><svg class="icon sm"><use href="#i-eye"/></svg>观看模式：键鼠/触屏/文字/手柄输入都被拦截</div>
+        </div>
+
+        <!-- wake -->
+        <div data-tool-top="wake" hidden>
+          <div class="wallpaper"></div>
+          <div class="wake-card">
+            <div class="big-power"><svg class="icon xl"><use href="#i-power"/></svg></div>
+            <div style="font-size:18px;font-weight:650">客厅台式机</div>
+            <div style="margin-top:4px;color:var(--text-tertiary);font-size:11px">离线 · Windows 11 · 上次在线 11-18 09:12</div>
+            <div class="row gap-8" style="justify-content:center;margin-top:12px">
+              <span class="chip online"><span class="status-dot online" style="width:5px;height:5px;box-shadow:none"></span>WOL 已配置</span>
+              <span class="chip ghost">局域网唤醒</span>
+            </div>
+            <div class="chip ghost" style="margin:14px auto 0;height:24px;font-size:9px">发送开机指令请在下屏操作</div>
+            <div class="hint" style="margin-top:10px;font-size:9px">需目标电脑主板/网卡支持 WOL，并保持电源与网络。</div>
+          </div>
+        </div>
+
+        <!-- terminal -->
+        <div data-tool-top="terminal" hidden>
+          <div class="wallpaper" style="opacity:.4"></div>
+          <div class="terminal-window">
+            <div class="terminal-bar"><span class="win-dot"></span><span class="win-dot"></span><span class="win-dot"></span><span style="margin-left:6px">PowerShell — 客厅台式机</span></div>
+            <div class="terminal-body">
+              <div class="dim">Windows PowerShell · 5.1.22621</div>
+              <div class="dim">Copyright (C) Microsoft Corporation. All rights reserved.</div>
+              <div>&nbsp;</div>
+              <div class="cmd">PS C:\Users\demo&gt; uu status</div>
+              <div>remote: connected · p2p udp · 18 ms</div>
+              <div>display: 2560x1440 @ 165 Hz</div>
+              <div class="cmd">PS C:\Users\demo&gt; Get-Process explorer</div>
+              <div>Handles  NPM(K)  PM(K)  WS(K)  CPU(s)  Id  ProcessName</div>
+              <div>  812      42  48120  96340   12.42  4120  explorer</div>
+              <div class="cmd">PS C:\Users\demo&gt; <span class="caret" style="display:inline-block;width:6px;height:11px;background:#C9F7D2;vertical-align:-1px"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ports -->
+        <div data-tool-top="ports" hidden>
+          <div class="wallpaper" style="opacity:.55"></div>
+          <div class="wake-card" style="width:420px;text-align:left">
+            <div class="row between"><div style="font-size:16px;font-weight:650">端口映射</div><span class="chip online" style="height:20px;font-size:8px">2 条生效</span></div>
+            <div class="port-list" style="margin-top:12px">
+              <div class="port-row"><span class="mono">127.0.0.1:3389</span><span>→</span><span class="mono">DESKTOP:3389</span><span class="state">TCP · 已连接</span></div>
+              <div class="port-row"><span class="mono">127.0.0.1:8080</span><span>→</span><span class="mono">DESKTOP:80</span><span class="state">TCP · 已连接</span></div>
+            </div>
+            <div class="note-box" style="margin-top:12px">映射只在本机监听；关闭工具页或断开远控会停止全部映射。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="hinge">DUO</div>
+
+  <!-- ===================== BOTTOM: tool settings ===================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">下屏 · 640×480dp · 工具与安全确认</div>
+    <section class="screen-bottom">
+      <div class="bottom-content">
+        <div class="bottom-head">
+          <div class="grow"><div class="title">工具</div><div class="sub"><span class="crumb"><b>串流</b><span class="sep">›</span><a href="duo-control-center.html?panel=more">控制中心</a><span class="sep">›</span><b>工具</b></span> · 观看模式 · 开机 · 终端 · 端口</div></div>
+          <button class="icon-btn" title="返回"><svg class="icon"><use href="#i-x"/></svg></button>
+        </div>
+
+        <div class="tools-layout">
+          <div class="tool-card active" data-tool="watch" tabindex="0" data-gp-initial data-gp-label="观看模式">
+            <div class="tool-icon"><svg class="icon sm"><use href="#i-eye"/></svg></div>
+            <div class="grow"><div class="nm">观看模式</div><div class="d">只看不控，可批注</div></div>
+            <span class="state">未开启</span>
+          </div>
+          <div class="tool-card" data-tool="wake">
+            <div class="tool-icon"><svg class="icon sm"><use href="#i-power"/></svg></div>
+            <div class="grow"><div class="nm">远程开机</div><div class="d">WOL 唤醒离线电脑</div></div>
+            <span class="state">已配置</span>
+          </div>
+          <div class="tool-card" data-tool="terminal">
+            <div class="tool-icon"><svg class="icon sm"><use href="#i-terminal"/></svg></div>
+            <div class="grow"><div class="nm">终端</div><div class="d">被控端 PowerShell</div></div>
+            <span class="state">1 个会话</span>
+          </div>
+          <div class="tool-card" data-tool="ports">
+            <div class="tool-icon"><svg class="icon sm"><use href="#i-link"/></svg></div>
+            <div class="grow"><div class="nm">端口映射</div><div class="d">TCP/UDP 本地转发</div></div>
+            <span class="state">2 条</span>
+          </div>
+        </div>
+
+        <div class="cc-body" style="padding:0 12px 10px;flex:1;min-height:0">
+          <!-- watch detail -->
+          <div data-tool-body="watch">
+            <div class="cc-group">
+              <div class="cc-group-title">观看模式</div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">仅观看</div><div class="d">禁止键鼠、触屏、文字、手柄输入</div></div>
+                <div class="cc-switch"></div>
+              </div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">允许批注</div><div class="d">画笔对被控端可见，不阻止对方操作</div></div>
+                <div class="cc-switch on"></div>
+              </div>
+
+            </div>
+            <div class="display-actions">
+              <button class="cc-btn primary">进入观看模式</button>
+              <button class="cc-btn"><svg class="icon sm"><use href="#i-edit"/></svg>画笔</button>
+              <button class="cc-btn"><svg class="icon sm"><use href="#i-right"/></svg>箭头</button>
+              <button class="cc-btn"><svg class="icon sm"><use href="#i-trash"/></svg>清空</button>
+            </div>
+          </div>
+
+          <!-- wake detail -->
+          <div data-tool-body="wake" hidden>
+            <div class="cc-group">
+              <div class="cc-group-title">远程开机</div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">目标设备</div><div class="d">客厅台式机 · 离线 · 上次 11-18 09:12</div></div>
+                <div class="v">Windows 11</div>
+              </div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">WOL 配置</div><div class="d">主板/网卡已启用，需保持电源与网络</div></div>
+                <div class="cc-switch on"></div>
+              </div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">唤醒方式</div><div class="d">同账号设备辅助唤醒 / 局域网广播</div></div>
+                <div class="cc-seg"><button class="on">辅助唤醒</button><button>局域网</button></div>
+              </div>
+            </div>
+            <div class="display-actions">
+              <button class="cc-btn primary">发送开机指令</button>
+              <button class="cc-btn">查看教程</button>
+            </div>
+          </div>
+
+          <!-- terminal detail -->
+          <div data-tool-body="terminal" hidden>
+            <div class="cc-group">
+              <div class="cc-group-title">终端会话</div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">PowerShell · 客厅台式机</div><div class="d">C:\Users\demo · 运行中 · 00:12:48</div></div>
+                <span class="chip online" style="height:20px;font-size:8px">已连接</span>
+              </div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">新会话</div><div class="d">打开新的登录 shell；离开页面后继续运行</div></div>
+                <svg class="icon sm tertiary"><use href="#i-chevron"/></svg>
+              </div>
+              <div class="cc-row disabled">
+                <div class="grow"><div class="k">接入本机终端</div><div class="d">需在被控端设置中允许</div></div>
+                <div class="v">未开启</div>
+              </div>
+            </div>
+            <div class="display-actions">
+              <button class="cc-btn primary">打开终端窗口</button>
+              <button class="cc-btn">结束全部会话</button>
+            </div>
+          </div>
+
+          <!-- ports detail -->
+          <div data-tool-body="ports" hidden>
+            <div class="cc-group">
+              <div class="cc-group-title">映射列表</div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">3389 → 3389</div><div class="d">TCP · 127.0.0.1 · 已连接</div></div>
+                <div class="cc-switch on"></div>
+              </div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">8080 → 80</div><div class="d">TCP · 127.0.0.1 · 已连接</div></div>
+                <div class="cc-switch on"></div>
+              </div>
+              <div class="cc-row">
+                <div class="grow"><div class="k">添加映射</div><div class="d">本地端口 → 被控端端口；支持 TCP/UDP</div></div>
+                <svg class="icon sm tertiary"><use href="#i-plus"/></svg>
+              </div>
+            </div>
+            <div class="note-box">端口映射属高级工具，默认关闭；关闭本页或断开远控会停止所有映射。</div>
+          </div>
+        </div>
+
+        <div class="bottom-foot">
+          <div class="keys"><span><kbd>L1</kbd>/<kbd>R1</kbd> 切工具</span><span><kbd>B</kbd> 确认</span><span><kbd>A</kbd> 返回</span></div>
+          <span>高危操作二次确认</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  设计说明：工具页只承载“低频但完整”的能力：观看模式、远程开机、终端、端口映射；进入前给出条件与风险提示。
+  文件传输和多屏有独立页面，避免工具页过载。
+</aside>
+</body>
+</html>

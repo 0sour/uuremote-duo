@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · UI 设计稿总览</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  .hero {
+    width: min(1180px, 100%);
+    border: 1px solid #222A33;
+    border-radius: 22px;
+    background:
+      radial-gradient(700px 300px at 78% 0%, rgba(108,203,255,.14), transparent 60%),
+      linear-gradient(160deg, #0E1319, #090C10);
+    padding: 30px 30px 26px;
+    display: grid;
+    grid-template-columns: 1.2fr .8fr;
+    gap: 28px;
+    align-items: center;
+  }
+  body.light .hero { border-color: #C9D0DA; background: radial-gradient(700px 300px at 78% 0%, rgba(11,127,181,.10), transparent 60%), linear-gradient(160deg, #F4F6F9, #E9EBF0); }
+  .hero h2 { margin: 0 0 10px; font-size: 30px; line-height: 1.15; letter-spacing: -.03em; font-weight: 680; }
+  .hero p { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.7; max-width: 560px; }
+  .hero .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .hero-art { display: flex; justify-content: center; }
+  .mini-duo { width: 260px; display: flex; flex-direction: column; gap: 8px; }
+  .mini-top { height: 146px; border-radius: 10px; border: 1px solid #2A323D; background: linear-gradient(150deg,#121A23,#0A0E13); position: relative; overflow: hidden; }
+  .mini-top::before { content: ""; position: absolute; inset: 16px; border-radius: 8px; border: 1px solid rgba(108,203,255,.18); background: linear-gradient(160deg, rgba(108,203,255,.10), transparent); }
+  .mini-top::after { content: "设备详情 / 远程桌面"; position: absolute; left: 18px; bottom: 14px; font-size: 9px; color: #6F7C8C; }
+  .mini-bottom { height: 180px; border-radius: 10px; border: 1px solid #2A323D; background: #0B0D10; padding: 10px; display: flex; flex-direction: column; gap: 7px; }
+  .mini-row { height: 22px; border-radius: 6px; border: 1px solid #2E3742; background: #15191F; }
+  .mini-row.focus { border-color: #EAF6FF; box-shadow: 0 0 0 2px #0B0D10, 0 0 0 3px #EAF6FF; background: rgba(108,203,255,.10); }
+  .mini-row.short { width: 62%; }
+  .mini-tools { display: flex; gap: 6px; }
+  .mini-tool { flex: 1; height: 28px; border-radius: 6px; background: #15191F; border: 1px solid #2E3742; }
+  .section-title { width: min(1180px, 100%); margin: 12px 0 -2px; display: flex; align-items: baseline; gap: 10px; }
+  .section-title h2 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: -.01em; }
+  .section-title span { color: var(--text-tertiary); font-size: 11px; }
+
+  .tokens { width: min(1180px, 100%); display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+  .token-card { border: 1px solid #222A33; border-radius: 16px; background: #0C1015; padding: 16px; }
+  body.light .token-card { border-color: #C9D0DA; background: #F7F8FA; }
+  .token-card h3 { margin: 0 0 12px; font-size: 13px; font-weight: 650; }
+  .swatches { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .swatch { display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--text-secondary); }
+  .swatch i { width: 24px; height: 24px; border-radius: 7px; border: 1px solid rgba(255,255,255,.12); flex: none; }
+  .type-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(46,55,66,.4); }
+  .type-row:last-child { border-bottom: 0; }
+  .type-row .sample { color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .type-row .meta { color: var(--text-tertiary); font: 500 9px var(--mono); white-space: nowrap; }
+  .space-row { display: flex; gap: 6px; align-items: flex-end; margin-top: 8px; }
+  .space-box { background: var(--accent-soft); border: 1px solid rgba(108,203,255,.25); border-radius: 3px; }
+  .radius-row { display: flex; gap: 8px; margin-top: 8px; }
+  .radius-box { width: 38px; height: 38px; border: 1px solid var(--outline-strong); background: var(--surface-2); display: grid; place-items: center; font: 500 9px var(--mono); color: var(--text-tertiary); }
+  .component-preview { display: flex; flex-direction: column; gap: 8px; }
+  .preview-btn { height: 34px; border-radius: 10px; border: 1px solid var(--outline); display: flex; align-items: center; justify-content: center; font: 600 11px var(--font); }
+  .preview-btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .preview-btn.ghost { color: var(--text-secondary); background: transparent; }
+  .preview-chip { display: flex; gap: 6px; flex-wrap: wrap; }
+  .preview-focus { height: 46px; border-radius: 12px; border: 1px solid var(--outline); background: var(--surface-1); position: relative; display: flex; align-items: center; padding: 0 12px; font-size: 11px; color: var(--text-secondary); }
+  .preview-focus::after { content: ""; position: absolute; inset: -5px; border-radius: 15px; border: 2px solid var(--focus-ring); box-shadow: 0 0 0 2px var(--focus-gap), 0 0 18px rgba(108,203,255,.22); }
+  .span-6 { grid-column: span 6; }
+  .span-4 { grid-column: span 4; }
+  .span-3 { grid-column: span 3; }
+  .coverage { width: min(1180px, 100%); border: 1px solid #222A33; border-radius: 16px; overflow: hidden; background: #0C1015; }
+  body.light .coverage { border-color: #C9D0DA; background: #F7F8FA; }
+  .coverage table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
+  .coverage td a { white-space: nowrap; }
+  .focus-table td:nth-child(1) { width: 16%; }
+  .focus-table td:nth-child(2) { width: 26%; }
+  .focus-table td:nth-child(3) { width: 58%; white-space: normal; }
+  .coverage th, .coverage td { text-align: left; padding: 8px 12px; border-bottom: 1px solid rgba(46,55,66,.45); vertical-align: top; }
+  .coverage th { font-size: 9px; letter-spacing: .10em; text-transform: uppercase; color: var(--text-tertiary); background: rgba(255,255,255,.02); }
+  .coverage tr:last-child td { border-bottom: 0; }
+  .coverage td:first-child { color: var(--text-primary); font-weight: 550; width: 170px; }
+  .coverage td:nth-child(2) { color: var(--text-secondary); }
+  .coverage td:last-child { width: 96px; color: var(--online); font: 500 10px var(--mono); }
+  .coverage .plan { color: var(--text-tertiary); }
+  @media (max-width: 900px) { .span-6,.span-4,.span-3 { grid-column: span 12; } .hero { grid-template-columns: 1fr; } .hero-art { display:none; } .tokens { grid-template-columns: 1fr; } }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+</head>
+<body>
+<header class="page-head">
+  <div>
+    <h1>DuoRemote · UI 设计、Token 与规格</h1>
+    <p>非官方 UU 远程客户端 · RP Duo 双屏 / 单屏横屏 · v0.2（2026-11-18）</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Design preview</span>
+    <span class="pill">1 px = 1 dp</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <span class="label" style="margin-left:auto">改色/改间距：编辑 <code style="color:var(--accent)">mockup.css</code> 顶部变量 · <a href="spec.md" style="color:var(--accent);text-decoration:none">交互规格</a> · <a href="../implementation-plan.md" style="color:var(--accent);text-decoration:none">实施计划</a></span>
+</div>
+
+<section class="hero">
+  <div>
+    <div class="eyebrow" style="margin-bottom:10px">RP DUO · DUAL SCREEN</div>
+    <h2>上屏看，下屏操作。<br>一个焦点树，手柄走到底。</h2>
+    <p>
+      双屏主页：上屏只做设备详情/桌面/状态，所有按钮、列表和页签都在下屏一棵焦点树里；不需要按任何键在上下屏之间切焦点。
+      串流内还有“控制中心”，直接改分辨率/帧率/画质/码率；每个页面都有独立的单屏版（832×468 / 640×480）。
+    </p>
+    <div class="chips">
+      <span class="chip accent"><svg class="icon sm"><use href="#i-monitor"/></svg>832×468dp 上屏</span>
+      <span class="chip ghost"><svg class="icon sm"><use href="#i-touchpad"/></svg>640×480dp 下屏</span>
+      <span class="chip ghost"><svg class="icon sm"><use href="#i-sliders"/></svg>串流内控制中心</span>
+      <span class="chip ghost"><svg class="icon sm"><use href="#i-folder"/></svg>文件传输</span>
+      <span class="chip ghost"><svg class="icon sm"><use href="#i-cast"/></svg>多屏 / 超级屏</span>
+      <span class="chip ghost"><svg class="icon sm"><use href="#i-gamepad"/></svg>XInput 手柄直通</span>
+      <a class="chip ghost" href="focus.md" style="text-decoration:none"><svg class="icon sm"><use href="#i-eye"/></svg>手柄焦点规范</a>
+    </div>
+  </div>
+  <div class="hero-art">
+    <div class="mini-duo">
+      <div class="mini-top"></div>
+      <div class="mini-bottom">
+        <div class="mini-row focus"></div>
+        <div class="mini-row"></div>
+        <div class="mini-row short"></div>
+        <div class="mini-tools"><div class="mini-tool"></div><div class="mini-tool"></div><div class="mini-tool"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-title"><h2>页面</h2><span>点击卡片打开可交互 HTML；右下角/顶部可切亮色与缩放</span></div>
+<section class="gallery">
+  <a class="card" href="duo-home.html">
+    <div class="thumb"><div class="bar w60"></div><div class="bar"></div><div class="bar w40"></div></div>
+    <h3>双屏主页</h3>
+    <p>下屏设备列表 + 连接/文件/观看/开机动作条；上屏只显示选中设备详情，不参与焦点。</p>
+  </a>
+  <a class="card" href="duo-stream.html">
+    <div class="thumb" style="background:#000"><div class="bar w60" style="background:rgba(108,203,255,.25)"></div><div class="bar" style="width:30%"></div><div class="bar w40" style="background:rgba(107,227,164,.18)"></div></div>
+    <h3>双屏串流 + 工具箱</h3>
+    <p>上屏只读远程桌面；下屏触摸板/键盘/快捷键/状态。手柄默认直通；切到本地操作才出现焦点环。</p>
+  </a>
+  <a class="card" href="duo-control-center.html">
+    <div class="thumb" style="background:#0B0D10"><div class="bar w40" style="background:var(--accent-soft)"></div><div class="bar" style="width:75%;height:30px;background:var(--surface-2)"></div><div class="bar" style="width:52%;background:rgba(255,196,107,.25)"></div></div>
+    <h3>串流内控制中心 ★</h3>
+    <p>画面与显示 / 外设 / 安全 / 更多；L1/R1 切分类，方向键选择，←→ 改值；待应用与“应用并重连”。</p>
+  </a>
+  <a class="card" href="duo-files.html">
+    <div class="thumb"><div class="bar w60"></div><div class="bar" style="width:72%"></div><div class="bar" style="width:48%;background:rgba(107,227,164,.25)"></div></div>
+    <h3>文件传输</h3>
+    <p>上屏只显示传输总览；下屏“浏览/队列/存储”三个页签承担全部操作，不再上下屏各放一套控件。</p>
+  </a>
+  <a class="card" href="duo-display.html">
+    <div class="thumb" style="background:#000"><div class="bar w40" style="background:rgba(108,203,255,.3)"></div><div class="bar" style="width:55%;background:rgba(255,255,255,.10)"></div><div class="bar" style="width:35%;background:rgba(255,196,107,.22)"></div></div>
+    <h3>多屏 / 超级屏 / 虚拟屏</h3>
+    <p>上屏只做当前屏幕预览；屏幕切换、超级屏 4K/144、虚拟屏创建/删除全部在下屏。</p>
+  </a>
+  <a class="card" href="duo-keymap.html">
+    <div class="thumb" style="background:#0B0D10"><div class="bar w60" style="background:rgba(108,203,255,.2)"></div><div class="bar" style="width:38%;background:rgba(255,255,255,.08)"></div><div class="bar" style="width:22%;height:34px;border-radius:50%;background:rgba(108,203,255,.28)"></div></div>
+    <h3>按键映射（参考稿 · 未排期）</h3>
+    <p>官方形态参考；Duo 决策不做触屏虚拟按键/轮盘，后续只考虑实体手柄→键鼠模板。</p>
+  </a>
+  <a class="card" href="duo-tools.html">
+    <div class="thumb"><div class="bar w40"></div><div class="bar" style="width:65%"></div><div class="bar" style="width:42%;background:rgba(255,196,107,.18)"></div></div>
+    <h3>工具：观看模式 / 开机 / 终端 / 端口</h3>
+    <p>上屏只读预览；观看模式、WOL 远程开机、PowerShell 终端、端口映射都在下屏操作。</p>
+  </a>
+  <a class="card" href="duo-login.html">
+    <div class="thumb"><div class="bar w40"></div><div class="bar w60"></div><div class="bar" style="width:24%;height:40px;margin:12px auto"></div></div>
+    <h3>扫码登录</h3>
+    <p>上屏二维码、下屏说明与短信入口；二维码有效期与刷新。</p>
+  </a>
+  <a class="card" href="duo-login-sms.html">
+    <div class="thumb"><div class="bar w40"></div><div class="bar w60"></div><div class="bar w40"></div><div class="bar" style="width:30%"></div></div>
+    <h3>短信验证码登录</h3>
+    <p>区号/手机号/验证码/重发倒计时，一屏完成。</p>
+  </a>
+  <a class="card" href="duo-settings.html">
+    <div class="thumb"><div class="bar w40"></div><div class="bar w60"></div><div class="bar w40"></div><div class="bar" style="width:30%"></div></div>
+    <h3>设置</h3>
+    <p>画面 / 屏幕 / 外设 / 安全 / 网络 / 外观 / 关于；上屏只做配置预览，下屏分类+选项。</p>
+  </a>
+  <a class="card" href="duo-account.html">
+    <div class="thumb"><div class="bar w40"></div><div class="bar" style="width:55%;height:28px;border-radius:50%"></div><div class="bar w60"></div><div class="bar" style="width:30%;background:rgba(255,138,128,.2)"></div></div>
+    <h3>账号</h3>
+    <p>上屏只做账号摘要；刷新、账号安全、关于、退出都在下屏行列表里完成。</p>
+  </a>
+  <a class="card" href="single-landscape-home.html">
+    <div class="thumb"><div class="bar w60"></div><div class="bar"></div><div class="bar w40"></div></div>
+    <h3>单屏横屏主页 · 上屏/下屏</h3>
+    <p>同一个 master-detail 布局适配 832×468 上屏 Activity 和 640×480 下屏 Presentation。</p>
+  </a>
+  <a class="card" href="single-landscape-stream.html">
+    <div class="thumb" style="background:#000"><div class="bar w60" style="background:rgba(108,203,255,.25)"></div><div class="bar" style="width:40%"></div><div class="bar w40" style="background:rgba(107,227,164,.18)"></div></div>
+    <h3>单屏横屏串流 · 视频 + 抽屉</h3>
+    <p>视频铺满，工具箱抽屉默认 42%；手柄默认直通，系统返回开本地菜单；键盘内置拼音 + 中/英切换 + 系统输入法。</p>
+  </a>
+  <a class="card" href="tokens.md">
+    <div class="thumb"><div class="bar w60"></div><div class="bar w40"></div><div class="bar"></div></div>
+    <h3>Token 文档</h3>
+    <p>颜色、字体、间距、圆角、组件、交互、Compose 映射与可修改项。</p>
+  </a>
+</section>
+
+<div class="section-title"><h2>页面流 · 每个新页面都有入口</h2><span>不再只靠“入口：...”文字；双屏、单屏都从主页 / 串流 / 控制中心可达</span></div>
+<section class="coverage">
+  <table>
+    <thead><tr><th>页面</th><th>入口 A</th><th>入口 B</th><th>单屏版</th></tr></thead>
+    <tbody>
+      <tr><td>文件传输</td><td>主页下屏动作条“文件”</td><td>串流控制中心 → 更多 / 本地菜单“页面”</td><td><a href="single-files.html">single-files.html</a></td></tr>
+      <tr><td>多屏 / 超级屏 / 虚拟屏</td><td>控制中心 → 画面与显示 → 显示器 / 虚拟屏</td><td>串流本地菜单“页面 → 多屏”</td><td><a href="single-display.html">single-display.html</a></td></tr>
+      <tr><td>工具（观看 / 开机 / 终端 / 端口）</td><td>主页动作条“更多 / 观看 / 开机”</td><td>控制中心 → 更多 / 本地菜单“页面 → 工具”</td><td><a href="single-tools.html">single-tools.html</a></td></tr>
+      <tr><td>账号</td><td>主页下屏头部账号图标 / X</td><td>串流本地菜单“页面 → 账号”</td><td><a href="single-account.html">single-account.html</a></td></tr>
+      <tr><td>设置</td><td>主页下屏头部设置图标</td><td>控制中心齿轮 / 串流本地菜单“设置”</td><td><a href="single-settings.html">single-settings.html</a></td></tr>
+      <tr><td>按键映射（参考）</td><td>控制中心 → 更多</td><td>串流本地菜单“页面 → 按键映射”</td><td><a href="single-keymap.html">single-keymap.html</a></td></tr>
+      <tr><td>控制中心</td><td>串流工具条“1080p·60”</td><td>本地菜单“画面与显示 / 外设 / 安全 / 更多”</td><td><a href="single-control-center.html">single-control-center.html</a></td></tr>
+      <tr><td>扫码 / 短信登录</td><td>首次启动</td><td>账号页退出登录后</td><td><a href="single-login.html">single-login.html</a></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="section-title"><h2>单屏页面 · 每个页面一套</h2><span>832×468 上屏 Activity / 640×480 下屏 Presentation，页内可切；单屏只有一棵焦点树</span></div>
+<section class="gallery">
+  <a class="card" href="single-control-center.html">
+    <div class="thumb" style="background:#0B0D10"><div class="bar w40" style="background:var(--accent-soft)"></div><div class="bar" style="width:75%;height:30px;background:var(--surface-2)"></div><div class="bar" style="width:52%;background:rgba(255,196,107,.25)"></div></div>
+    <h3>单屏控制中心</h3>
+    <p>832 左侧分类 / 右侧选项，640 顶部分类页签；底部统一“应用并重连”。</p>
+  </a>
+  <a class="card" href="single-files.html">
+    <div class="thumb"><div class="bar w60"></div><div class="bar" style="width:72%"></div><div class="bar" style="width:48%;background:rgba(107,227,164,.25)"></div></div>
+    <h3>单屏文件传输</h3>
+    <p>832 浏览 / 队列 / 存储三栏并排；640 用 L1/R1 切三个页签，所有动作同屏完成。</p>
+  </a>
+  <a class="card" href="single-display.html">
+    <div class="thumb" style="background:#000"><div class="bar w40" style="background:rgba(108,203,255,.3)"></div><div class="bar" style="width:55%;background:rgba(255,255,255,.10)"></div><div class="bar" style="width:35%;background:rgba(255,196,107,.22)"></div></div>
+    <h3>单屏多屏</h3>
+    <p>显示器 / 超级屏 / 虚拟屏页签；832 列表 + 参数并排，640 上下排列。</p>
+  </a>
+  <a class="card" href="single-tools.html">
+    <div class="thumb"><div class="bar w40"></div><div class="bar" style="width:65%"></div><div class="bar" style="width:42%;background:rgba(255,196,107,.18)"></div></div>
+    <h3>单屏工具</h3>
+    <p>观看 / 开机 / 终端 / 端口四个页签；危险操作同屏二次确认。</p>
+  </a>
+  <a class="card" href="single-account.html">
+    <div class="thumb"><div class="bar w40"></div><div class="bar" style="width:55%;height:28px;border-radius:50%"></div><div class="bar w60"></div><div class="bar" style="width:30%;background:rgba(255,138,128,.2)"></div></div>
+    <h3>单屏账号</h3>
+    <p>832 左摘要 / 右动作，640 上下排列；刷新 / 安全 / 关于 / 退出同一焦点树。</p>
+  </a>
+  <a class="card" href="single-settings.html">
+    <div class="thumb"><div class="bar w40"></div><div class="bar w60"></div><div class="bar w40"></div><div class="bar" style="width:30%"></div></div>
+    <h3>单屏设置</h3>
+    <p>832 左侧分类 / 右侧选项，640 顶部分类页签；L1/R1 只切分类。</p>
+  </a>
+  <a class="card" href="single-keymap.html">
+    <div class="thumb" style="background:#0B0D10"><div class="bar w60" style="background:rgba(108,203,255,.2)"></div><div class="bar" style="width:38%;background:rgba(255,255,255,.08)"></div><div class="bar" style="width:22%;height:34px;border-radius:50%;background:rgba(255,108,108,.2)"></div></div>
+    <h3>单屏按键映射（参考）</h3>
+    <p>官方形态参考，未排期；不做触屏虚拟按键 / 轮盘。</p>
+  </a>
+  <a class="card" href="single-login.html">
+    <div class="thumb"><div class="bar w40"></div><div class="bar w60"></div><div class="bar" style="width:24%;height:40px;margin:12px auto"></div></div>
+    <h3>单屏登录</h3>
+    <p>扫码 / 短信同屏页签；832 左右分栏，640 上下排列。</p>
+  </a>
+</section>
+
+<div class="section-title"><h2>手柄焦点模型 · 单焦点树</h2><span>参考 bili-duo 的输入契约，按 DuoRemote 的双屏工具台改造</span></div>
+<section class="coverage">
+  <table class="focus-table">
+    <thead><tr><th>输入</th><th>行为</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>方向键 / 左摇杆</td><td>在当前操作屏内移动焦点</td><td>焦点环：外圈深色间隙 + 2dp 高亮环，不覆盖内容</td></tr>
+      <tr><td>B / Enter</td><td>确认 / 打开 / 切换</td><td>对应 Duo 实体丝印；串流直通时 B 仍发送到远端</td></tr>
+      <tr><td>A / Esc / Back</td><td>返回 / 关闭浮层</td><td>先关 IME / 菜单，再回上一页</td></tr>
+      <tr><td>L1 / R1</td><td>一级页签 / 分类</td><td>不用于上下屏切焦点；上屏不参与焦点树</td></tr>
+      <tr><td>L2 / R2</td><td>二级页签</td><td>控制中心“画面 / 显示”等子页签</td></tr>
+      <tr><td>X / Y</td><td>页面动作</td><td>文件：上传 / 下载；多屏：新建 / 删除；账号：退出 / 刷新</td></tr>
+      <tr><td>START</td><td>手柄操作说明</td><td>设计稿内由 HUD 展示完整键位</td></tr>
+      <tr><td>触摸</td><td>点按即聚焦并执行</td><td>与手柄焦点共用同一棵焦点树</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="section-title"><h2>功能覆盖</h2><span>官方 + 第三方功能列表逐项对应设计稿页面；实现状态见 ../feature-matrix.md</span></div>
+<section class="coverage">
+  <table>
+    <thead><tr><th>功能</th><th>设计稿位置</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td>扫码 / 短信 / 设备 ID 协助</td><td>duo-login.html / duo-login-sms.html</td><td>已画</td></tr>
+      <tr><td>设备列表 / 在线状态 / 最近连接</td><td>duo-home.html / single-landscape-home.html</td><td>已画</td></tr>
+      <tr><td>设备详情 / 连接偏好 / 文件·观看·开机动作</td><td>duo-home.html / single-landscape-home.html</td><td>已画</td></tr>
+      <tr><td>账号页 / 刷新 / 退出登录</td><td>duo-account.html / single-account.html</td><td>已画 · 双/单</td></tr>
+      <tr><td>串流视频 / 工具条 / 触摸板 / 键盘 / 快捷键 / 状态</td><td>duo-stream.html / single-landscape-stream.html</td><td>已画</td></tr>
+      <tr><td>串流内控制中心（画面 / 外设 / 安全 / 更多）</td><td>duo-control-center.html / single-control-center.html</td><td>已画 · 双/单</td></tr>
+      <tr><td>分辨率 / 帧率 / 画质 / 码率 / 缩放</td><td>duo-control-center.html + duo-settings.html / single-settings.html</td><td>已画 · 双/单</td></tr>
+      <tr><td>手柄直通 / 震动 / 风格 / 死区 / Y 反向</td><td>duo-control-center.html（外设）</td><td>已画</td></tr>
+      <tr><td>触摸板 / 直接触摸 / 键盘默认 / 候选数</td><td>duo-control-center.html（外设）</td><td>已画</td></tr>
+      <tr><td>声音 / 音量 / 麦克风</td><td>duo-control-center.html（外设 → 声音与麦克风）</td><td>已画</td></tr>
+      <tr><td>远程协助入口</td><td>duo-home.html（设备页）</td><td>已画</td></tr>
+      <tr><td>同步剪贴板 / 仅观看 / 锁屏 / 防窥</td><td>duo-control-center.html（安全）</td><td>已画</td></tr>
+      <tr><td>按键映射 / 宏 / 轮盘 / 虚拟摇杆</td><td>duo-keymap.html / single-keymap.html</td><td>参考 · 未排期</td></tr>
+      <tr><td>多显示器 / 超级屏 / 虚拟屏 / 多屏页签</td><td>duo-display.html / single-display.html</td><td>已画 · 双/单</td></tr>
+      <tr><td>文件传输 / 下载 / 上传 / 队列</td><td>duo-files.html / single-files.html</td><td>已画 · 双/单</td></tr>
+      <tr><td>观看模式 / 远程开机 / 重启关机</td><td>duo-tools.html / single-tools.html</td><td>已画 · 双/单</td></tr>
+      <tr><td>终端 / 端口映射</td><td>duo-tools.html / single-tools.html</td><td>已画 · 双/单</td></tr>
+      <tr><td>设置：画面/屏幕/外设/安全/网络/外观/关于</td><td>duo-settings.html / single-settings.html</td><td>已画 · 双/单</td></tr>
+      <tr><td>单屏横屏主页 / 串流 / 抽屉</td><td>single-landscape-home.html / single-landscape-stream.html</td><td>已画 · 单屏</td></tr>
+      <tr><td>Token / 焦点环 / 亮暗主题 / 动效</td><td>tokens.md + mockup.css</td><td>已画</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="section-title"><h2>Design tokens</h2><span>与 tokens.md 同步；改这里之前先改 tokens.md</span></div>
+<section class="tokens">
+  <div class="token-card span-4">
+    <h3>颜色 · 暗色</h3>
+    <div class="swatches">
+      <div class="swatch"><i style="background:#0B0D10"></i>bg #0B0D10</div>
+      <div class="swatch"><i style="background:#15191F"></i>surface-1 #15191F</div>
+      <div class="swatch"><i style="background:#1C222B"></i>surface-2 #1C222B</div>
+      <div class="swatch"><i style="background:#2E3742"></i>outline #2E3742</div>
+      <div class="swatch"><i style="background:#E8EDF4"></i>text #E8EDF4</div>
+      <div class="swatch"><i style="background:#A7B3C2"></i>secondary #A7B3C2</div>
+      <div class="swatch"><i style="background:#6CCBFF"></i>accent #6CCBFF</div>
+      <div class="swatch"><i style="background:#6BE3A4"></i>online #6BE3A4</div>
+      <div class="swatch"><i style="background:#FFC46B"></i>warning #FFC46B</div>
+      <div class="swatch"><i style="background:#FF8A80"></i>error #FF8A80</div>
+    </div>
+  </div>
+
+  <div class="token-card span-4">
+    <h3>字体</h3>
+    <div class="type-row"><span class="sample" style="font-size:22px;font-weight:650">设备详情</span><span class="meta">display 28/34</span></div>
+    <div class="type-row"><span class="sample" style="font-size:17px;font-weight:600">客厅台式机</span><span class="meta">title 18/24</span></div>
+    <div class="type-row"><span class="sample" style="font-size:13px">在线 · Windows 11 · 今天 14:32</span><span class="meta">body 14/20</span></div>
+    <div class="type-row"><span class="sample" style="font-size:11px;color:var(--text-secondary)">B 连接 · A 返回</span><span class="meta">label 12/16</span></div>
+    <div class="type-row"><span class="sample mono" style="font-size:11px;color:var(--text-secondary)">60 FPS · 42.6 Mbps</span><span class="meta">mono 12/16</span></div>
+  </div>
+
+  <div class="token-card span-4">
+    <h3>间距 / 圆角 / 焦点</h3>
+    <div style="font-size:10px;color:var(--text-tertiary);margin-bottom:4px">4dp 基准</div>
+    <div class="space-row">
+      <div class="space-box" style="width:4px;height:22px"></div>
+      <div class="space-box" style="width:8px;height:22px"></div>
+      <div class="space-box" style="width:12px;height:22px"></div>
+      <div class="space-box" style="width:16px;height:22px"></div>
+      <div class="space-box" style="width:20px;height:22px"></div>
+      <div class="space-box" style="width:24px;height:22px"></div>
+      <div class="space-box" style="width:32px;height:22px"></div>
+      <div class="space-box" style="width:40px;height:22px"></div>
+    </div>
+    <div class="radius-row">
+      <div class="radius-box" style="border-radius:6px">6</div>
+      <div class="radius-box" style="border-radius:8px">8</div>
+      <div class="radius-box" style="border-radius:12px">12</div>
+      <div class="radius-box" style="border-radius:16px">16</div>
+      <div class="radius-box" style="border-radius:20px">20</div>
+    </div>
+    <div class="preview-focus" style="margin-top:18px">焦点环：2dp 白环 + 2dp 间隔 + 柔光</div>
+  </div>
+
+  <div class="token-card span-6">
+    <h3>组件</h3>
+    <div class="component-preview">
+      <div style="display:flex;gap:8px">
+        <div class="preview-btn primary" style="flex:1">连接</div>
+        <div class="preview-btn ghost" style="flex:1">返回</div>
+        <div class="preview-btn" style="flex:1">刷新</div>
+      </div>
+      <div class="preview-chip">
+        <span class="chip online"><span class="status-dot online" style="width:5px;height:5px;box-shadow:none"></span>在线</span>
+        <span class="chip offline">离线</span>
+        <span class="chip warning">连接中</span>
+        <span class="chip error">已断开</span>
+        <span class="chip accent">已选中</span>
+      </div>
+      <div class="device-card selected" style="height:60px">
+        <div class="device-icon" style="width:30px;height:30px;border-radius:8px"><svg class="icon sm"><use href="#i-monitor"/></svg></div>
+        <div class="grow"><div class="name truncate" style="font-size:12px">客厅台式机</div><div class="meta"><span class="status-dot online"></span><span>在线</span><span class="sep"></span><span>Windows 11</span></div></div>
+        <span class="badge">我的</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="token-card span-6">
+    <h3>布局原则</h3>
+    <ul style="margin:0;padding-left:18px;color:var(--text-secondary);font-size:11px;line-height:1.8">
+      <li>上屏 24dp 边距，主区左 60% 信息 / 右 40% 操作；串流时视频铺满。</li>
+      <li>下屏 16dp 边距：顶栏 44 / Tab 36 / 内容 ~360 / 底部提示 28。</li>
+      <li>设备卡 76dp，下屏一屏 4 张；卡片间距 10dp。</li>
+      <li>触摸目标 ≥44dp；键盘键高 38–42dp，间距 6dp。</li>
+      <li>焦点环外扩 4dp，先绘制环再 clip；Lazy 首行留焦点余量。</li>
+      <li>亮色只用于列表/详情/设置；视频始终黑底。</li>
+      <li>单屏也是横屏：上屏 Activity 832×468 / 下屏 Presentation 640×480，同一套 master-detail + 抽屉。</li>
+      <li>主页 B 连接/A 返回；串流时手柄默认直通电脑，本地菜单只走系统 Return/Back，不占用任何手柄键。</li>
+      <li>切“本地操作”才暂停远端口柄，先释放按键再断开会话手柄，切回时重连。</li>
+    </ul>
+  </div>
+</section>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:10px">
+  文件：<code>docs/ui/tokens.md</code>（Token/组件/交互全文）、<code>mockup.css</code>（变量与组件样式）、
+  <code>mockup.js</code>（亮色/缩放/Tab/内置拼音与系统 IME 预览）、<code>sprite.js</code>（内联图标）。
+  所有页面无外部依赖，双击 HTML 即可在 Edge/Chrome 打开。
+</aside>
+</body>
+</html>

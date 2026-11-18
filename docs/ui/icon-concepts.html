@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-zcode-design>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 图标方向探索</title>
+<style>
+  :root {
+    --bg: #07090c;
+    --panel: #0f141a;
+    --panel-2: #151b22;
+    --line: #26313d;
+    --text: #e8edf4;
+    --muted: #9aa8b7;
+    --dim: #7f8c9b;
+    --accent: #6ccbff;
+    --accent-2: #2e9bd6;
+    --mint: #6be3a4;
+    --amber: #ffc46b;
+    --red: #ff8a80;
+    --radius: 20px;
+    --sans: "Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+    --mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--bg); color-scheme: dark; }
+  body {
+    margin: 0;
+    color: var(--text);
+    font-family: var(--sans);
+    background:
+      radial-gradient(1100px 620px at 82% -8%, rgba(108, 203, 255, .10), transparent 62%),
+      radial-gradient(800px 500px at 0% 28%, rgba(107, 227, 164, .035), transparent 60%),
+      var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1640px; margin: 0 auto; padding: 40px 36px 48px; }
+
+  .masthead {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(240px, .65fr);
+    gap: 32px;
+    align-items: end;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--line);
+  }
+  .eyebrow {
+    font: 600 10px/1.2 var(--mono);
+    letter-spacing: .18em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  h1 {
+    margin: 14px 0 0;
+    font-size: clamp(30px, 3.15vw, 46px);
+    line-height: 1.1;
+    letter-spacing: -.025em;
+    font-weight: 650;
+  }
+  .lede {
+    max-width: 64ch;
+    margin: 16px 0 0;
+    color: var(--muted);
+    font-size: 14.5px;
+    line-height: 1.75;
+  }
+  .meta {
+    justify-self: end;
+    text-align: right;
+    color: var(--dim);
+    font: 11px/1.75 var(--mono);
+  }
+  .meta strong { color: var(--muted); font-weight: 500; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 26px;
+  }
+  .card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .025), transparent 28%),
+      var(--panel);
+  }
+  .card-top { display: flex; align-items: flex-start; gap: 11px; }
+  .index {
+    flex: none;
+    width: 29px;
+    height: 29px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(108, 203, 255, .34);
+    border-radius: 9px;
+    color: var(--accent);
+    font: 600 11px/1 var(--mono);
+  }
+  h2 { margin: 0; font-size: 19px; line-height: 1.2; letter-spacing: -.01em; }
+  .tag { margin: 4px 0 0; color: var(--dim); font-size: 11.5px; line-height: 1.4; }
+
+  .stage {
+    position: relative;
+    height: 240px;
+    margin: 14px 0 12px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .055);
+    border-radius: 14px;
+    background:
+      radial-gradient(230px 190px at 50% 46%, rgba(108, 203, 255, .13), transparent 70%),
+      #090d12;
+  }
+  .stage::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, .09) 1px, transparent 1px);
+    background-size: 18px 18px;
+    opacity: .18;
+    -webkit-mask-image: linear-gradient(#000, transparent 82%);
+    mask-image: linear-gradient(#000, transparent 82%);
+  }
+  .app-icon {
+    position: relative;
+    z-index: 1;
+    width: 192px;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 42px;
+    box-shadow:
+      0 22px 50px rgba(0, 0, 0, .52),
+      0 0 0 1px rgba(255, 255, 255, .07);
+  }
+  .app-icon svg { display: block; width: 100%; height: 100%; }
+
+  .masks { display: flex; align-items: flex-start; gap: 11px; }
+  .mask-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .mask {
+    width: 44px;
+    height: 44px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: #0a0f14;
+  }
+  .mask svg { display: block; width: 100%; height: 100%; }
+  .mask.circle { border-radius: 50%; }
+  .mask.squircle { border-radius: 30%; }
+  .mask.rounded { border-radius: 19%; }
+  .mask-item span { color: var(--dim); font-size: 9.5px; line-height: 1; }
+
+  .mono-row { margin-left: auto; display: flex; align-items: center; gap: 6px; padding-top: 2px; }
+  .mono-label { color: var(--dim); font-size: 9.5px; margin-right: 1px; }
+  .mono {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+  }
+  .mono svg { width: 19px; height: 19px; }
+  .mono.dark { color: #e8edf4; background: #0a0f14; border: 1px solid var(--line); }
+  .mono.light { color: #101820; background: #edf1f6; border: 1px solid #d5dde7; }
+
+  .desc {
+    min-height: 72px;
+    margin: 10px 0 14px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.66;
+  }
+  .desc b { color: var(--text); font-weight: 600; }
+
+  .inapp-bar {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 9px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #0a0f14;
+  }
+  .brand-tile {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(108, 203, 255, .25);
+    border-radius: 9px;
+    color: var(--accent);
+    background: linear-gradient(180deg, #16232e, #0b1117);
+  }
+  .brand-tile svg { width: 21px; height: 21px; }
+  .brand-copy { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+  .brand-copy strong { font-size: 13.5px; font-weight: 600; letter-spacing: .005em; }
+  .brand-copy span { margin-top: 3px; color: var(--dim); font-size: 9.5px; white-space: nowrap; }
+  .online-chip {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 7px;
+    border: 1px solid rgba(107, 227, 164, .24);
+    border-radius: 999px;
+    background: rgba(107, 227, 164, .07);
+    color: var(--mint);
+    font-size: 9.5px;
+    white-space: nowrap;
+  }
+  .online-chip i { width: 5px; height: 5px; border-radius: 50%; background: var(--mint); }
+
+  .decision {
+    background:
+      linear-gradient(155deg, rgba(108, 203, 255, .085), transparent 54%),
+      var(--panel);
+    border-color: rgba(108, 203, 255, .28);
+  }
+  .decision h2 { font-size: 20px; }
+  .decision .tag { color: var(--accent); }
+  .decision dl { display: flex; flex-direction: column; gap: 10px; margin: 16px 0 0; }
+  .decision dt { color: var(--text); font-size: 12.5px; font-weight: 650; line-height: 1.35; }
+  .decision dd { margin: 3px 0 0; color: var(--muted); font-size: 12px; line-height: 1.58; }
+  .pick {
+    margin: auto 0 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    color: var(--accent);
+    font-size: 12.5px;
+    line-height: 1.65;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 16px;
+  }
+  .section-head h2 { font-size: 22px; }
+  .section-head p { max-width: 62ch; margin: 0; color: var(--dim); font-size: 12.5px; line-height: 1.65; text-align: right; }
+
+  .inapp {
+    margin-top: 34px;
+    padding-top: 26px;
+    border-top: 1px solid var(--line);
+  }
+  .inapp-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .screen {
+    position: relative;
+    min-height: 286px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background:
+      radial-gradient(520px 260px at 50% 0%, rgba(108, 203, 255, .07), transparent 66%),
+      #0a0f14;
+  }
+  .screen-label {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    z-index: 2;
+    color: var(--dim);
+    font: 10.5px/1 var(--mono);
+    letter-spacing: .08em;
+  }
+  .screen-note {
+    position: absolute;
+    right: 14px;
+    bottom: 11px;
+    z-index: 2;
+    color: var(--dim);
+    font-size: 10px;
+  }
+
+  .login-mock {
+    min-height: 286px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 40px 22px 26px;
+  }
+  .login-icon {
+    width: 68px;
+    height: 68px;
+    overflow: hidden;
+    border-radius: 18px;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, .45);
+  }
+  .login-icon svg { display: block; width: 100%; height: 100%; }
+  .login-name { font-size: 21px; font-weight: 650; letter-spacing: -.01em; }
+  .login-sub { color: var(--dim); font-size: 11px; margin-top: -4px; }
+  .login-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .pill-primary, .pill-ghost {
+    padding: 7px 13px;
+    border-radius: 999px;
+    font-size: 11px;
+  }
+  .pill-primary { color: #00243a; background: var(--accent); font-weight: 600; }
+  .pill-ghost { color: var(--muted); border: 1px solid var(--line); background: rgba(255, 255, 255, .02); }
+
+  .empty-mock {
+    min-height: 286px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 36px 22px 26px;
+    text-align: center;
+  }
+  .empty-icon { width: 58px; height: 58px; overflow: hidden; border-radius: 15px; opacity: .92; }
+  .empty-icon svg { display: block; width: 100%; height: 100%; }
+  .empty-title { margin-top: 4px; font-size: 16px; font-weight: 600; }
+  .empty-body { max-width: 36ch; color: var(--dim); font-size: 11.5px; line-height: 1.6; }
+  .empty-pill { margin-top: 6px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 10.5px; }
+
+  .about-mock { min-height: 286px; display: flex; align-items: center; padding: 40px 28px 26px; }
+  .about-card {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .018);
+  }
+  .about-icon { flex: none; width: 48px; height: 48px; overflow: hidden; border-radius: 12px; }
+  .about-icon svg { display: block; width: 100%; height: 100%; }
+  .about-copy { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .about-name { font-size: 16px; font-weight: 650; }
+  .about-meta { color: var(--dim); font: 10.5px/1.4 var(--mono); }
+  .about-license { margin-left: auto; color: var(--mint); font: 9.5px/1 var(--mono); border: 1px solid rgba(107, 227, 164, .24); border-radius: 999px; padding: 4px 7px; white-space: nowrap; }
+
+  .theme-mock {
+    min-height: 286px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 26px;
+    padding: 42px 24px 26px;
+  }
+  .theme-item { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+  .theme-icon {
+    width: 78px;
+    height: 78px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+  }
+  .theme-icon svg { width: 40px; height: 40px; }
+  .theme-icon.dark { color: #e8edf4; background: #0a0f14; border: 1px solid var(--line); }
+  .theme-icon.light { color: #101820; background: #edf1f6; border: 1px solid #d5dde7; }
+  .theme-item span { color: var(--dim); font-size: 10px; }
+  .sizes { display: flex; align-items: flex-end; gap: 12px; margin-left: 8px; padding-bottom: 18px; }
+  .size-item { display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--dim); font: 8px/1 var(--mono); }
+  .size-box { display: grid; place-items: center; border: 1px solid var(--line); border-radius: 7px; background: #0a0f14; color: var(--accent); }
+  .size-box svg { width: 100%; height: 100%; }
+
+  .next {
+    display: grid;
+    grid-template-columns: 1.1fr 1.9fr;
+    gap: 22px;
+    margin-top: 34px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+  .next h2 { font-size: 18px; }
+  .next p { margin: 8px 0 0; color: var(--dim); font-size: 11.5px; line-height: 1.7; }
+  .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .step { padding: 12px 13px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, .018); }
+  .step b { display: block; color: var(--text); font-size: 12px; font-weight: 600; }
+  .step span { display: block; margin-top: 4px; color: var(--dim); font-size: 10.5px; line-height: 1.55; }
+
+  .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+  @media (max-width: 1180px) {
+    .page { padding: 34px 24px 44px; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .masthead { grid-template-columns: 1fr; gap: 16px; }
+    .meta { justify-self: start; text-align: left; }
+    .inapp-grid { grid-template-columns: 1fr; }
+    .next { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 700px) {
+    .page { padding: 24px 16px 36px; }
+    .grid { grid-template-columns: 1fr; }
+    .stage { height: 218px; }
+    .app-icon { width: 178px; border-radius: 40px; }
+    .desc { min-height: 0; }
+    .section-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .section-head p { text-align: left; }
+    .steps { grid-template-columns: 1fr; }
+    .theme-mock { gap: 16px; flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="gBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b2a36"/>
+      <stop offset=".55" stop-color="#0c1319"/>
+      <stop offset="1" stop-color="#06080b"/>
+    </linearGradient>
+    <radialGradient id="gGlow" cx=".5" cy=".44" r=".56">
+      <stop offset="0" stop-color="#6ccbff" stop-opacity=".30"/>
+      <stop offset=".62" stop-color="#6ccbff" stop-opacity=".07"/>
+      <stop offset="1" stop-color="#6ccbff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gScreen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a6e4ff"/>
+      <stop offset=".52" stop-color="#6ccbff"/>
+      <stop offset="1" stop-color="#2e9bd6"/>
+    </linearGradient>
+    <linearGradient id="gSpine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9be0ff"/>
+      <stop offset="1" stop-color="#2a6f9e"/>
+    </linearGradient>
+    <linearGradient id="gDiag" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8ad9ff"/>
+      <stop offset=".58" stop-color="#4fb4e6"/>
+      <stop offset="1" stop-color="#2a7fa8"/>
+    </linearGradient>
+
+    <symbol id="icon-a" viewBox="0 0 512 512">
+      <rect width="512" height="512" fill="#0b0d10"/>
+      <clipPath id="aTopClip"><rect x="96" y="96" width="320" height="152" rx="40"/></clipPath>
+      <rect x="96" y="96" width="320" height="152" rx="40" fill="#0b0d10"/>
+      <g clip-path="url(#aTopClip)">
+        <path d="M204.98 146.94 Q206 138 213.36 143.18 L252.64 170.82 Q260 176 251.27 178.18 L244.73 179.82 Q236 182 240.27 189.92 L245.73 200.08 Q250 208 241.95 212.02 L238.05 213.98 Q230 218 225.73 210.08 L220.27 199.92 Q216 192 209.27 197.98 L204.73 202.02 Q198 208 199.02 199.06 Z" transform="translate(10 0)" fill="#eaf6ff"/>
+        <g fill="none" stroke="#6ccbff" stroke-linecap="round">
+          <path d="M298 160 Q298 140 278 140" stroke-width="7"/>
+          <path d="M314 160 Q314 124 278 124" stroke-width="7" opacity=".65"/>
+        </g>
+        <circle cx="278" cy="160" r="6" fill="#6ccbff"/>
+      </g>
+      <rect x="96" y="96" width="320" height="152" rx="40" fill="none" stroke="#eaf6ff" stroke-width="12"/>
+      <rect x="96" y="264" width="320" height="152" rx="40" fill="#0b0d10"/>
+      <rect x="148" y="332" width="64" height="18" rx="8" fill="#eaf6ff"/>
+      <rect x="171" y="309" width="18" height="64" rx="8" fill="#eaf6ff"/>
+      <circle cx="340" cy="316" r="10" fill="#6ccbff"/>
+      <circle cx="314" cy="340" r="10" fill="#6ccbff"/>
+      <circle cx="366" cy="340" r="10" fill="#6ccbff"/>
+      <circle cx="340" cy="364" r="10" fill="#6ccbff"/>
+      <rect x="96" y="264" width="320" height="152" rx="40" fill="none" stroke="#6ccbff" stroke-width="12"/>
+    </symbol>
+
+    <symbol id="icon-b" viewBox="0 0 512 512">
+      <rect width="512" height="512" fill="url(#gBg)"/>
+      <rect width="512" height="512" fill="url(#gGlow)"/>
+      <clipPath id="bClip"><rect x="88" y="88" width="336" height="336" rx="88"/></clipPath>
+      <g clip-path="url(#bClip)">
+        <rect x="88" y="88" width="336" height="336" fill="url(#gDiag)"/>
+        <path d="M88 342 L342 88 L424 88 L424 424 L88 424 Z" fill="#0b131b"/>
+        <path d="M88 342 L342 88" stroke="#eaf6ff" stroke-opacity=".7" stroke-width="5"/>
+        <path d="M286 258 L336 292 L309 296 L322 322 L302 331 L290 304 L272 320 Z" fill="#eaf6ff"/>
+        <rect x="150" y="170" width="56" height="16" rx="7" fill="#08202e" opacity=".78"/>
+        <rect x="170" y="150" width="16" height="56" rx="7" fill="#08202e" opacity=".78"/>
+        <circle cx="366" cy="366" r="12" fill="#6be3a4"/>
+      </g>
+      <rect x="88" y="88" width="336" height="336" rx="88" fill="none" stroke="#eaf6ff" stroke-opacity=".18" stroke-width="2"/>
+    </symbol>
+
+    <symbol id="icon-c" viewBox="0 0 512 512">
+      <rect width="512" height="512" fill="url(#gBg)"/>
+      <rect width="512" height="512" fill="url(#gGlow)"/>
+      <g transform="rotate(-10 256 188)">
+        <rect x="96" y="120" width="320" height="130" rx="32" fill="url(#gScreen)"/>
+        <rect x="96" y="120" width="320" height="130" rx="32" fill="none" stroke="#eaf6ff" stroke-opacity=".45" stroke-width="3"/>
+        <path d="M300 150 L342 178 L324 183 L334 203 L320 210 L310 190 L296 202 Z" fill="#08202e"/>
+      </g>
+      <g transform="rotate(10 256 324)">
+        <rect x="96" y="264" width="320" height="130" rx="32" fill="#0b131b" stroke="#6ccbff" stroke-width="5"/>
+        <rect x="148" y="314" width="58" height="18" rx="7" fill="#6be3a4"/>
+        <rect x="168" y="294" width="18" height="58" rx="7" fill="#6be3a4"/>
+        <circle cx="320" cy="306" r="10" fill="#ffc46b"/>
+        <circle cx="346" cy="332" r="10" fill="#ff8a80"/>
+        <circle cx="320" cy="358" r="10" fill="#6ccbff" opacity=".55"/>
+      </g>
+      <rect x="244" y="238" width="24" height="42" rx="12" fill="#6ccbff" opacity=".18"/>
+      <rect x="250" y="244" width="12" height="30" rx="6" fill="#b9ecff"/>
+      <circle cx="256" cy="259" r="22" fill="none" stroke="#6ccbff" stroke-opacity=".22" stroke-width="3"/>
+      <circle cx="256" cy="259" r="6" fill="#6be3a4"/>
+    </symbol>
+
+    <symbol id="icon-d" viewBox="0 0 512 512">
+      <rect width="512" height="512" fill="url(#gBg)"/>
+      <rect width="512" height="512" fill="url(#gGlow)"/>
+      <rect x="118" y="54" width="276" height="404" rx="54" fill="#111a23" stroke="#3a4a5b" stroke-width="4"/>
+      <rect x="124" y="60" width="264" height="392" rx="48" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="2"/>
+      <rect x="150" y="90" width="212" height="106" rx="20" fill="url(#gScreen)"/>
+      <rect x="150" y="90" width="212" height="106" rx="20" fill="none" stroke="#eaf6ff" stroke-opacity=".4" stroke-width="2.5"/>
+      <path d="M300 118 L330 138 L317 141 L324 156 L314 161 L307 146 L297 155 Z" fill="#08202e"/>
+      <rect x="150" y="214" width="212" height="100" rx="20" fill="#0a1219" stroke="#6ccbff" stroke-width="4"/>
+      <rect x="180" y="254" width="40" height="12" rx="5" fill="#6be3a4"/>
+      <rect x="194" y="240" width="12" height="40" rx="5" fill="#6be3a4"/>
+      <circle cx="318" cy="250" r="8" fill="#ffc46b"/>
+      <circle cx="338" cy="270" r="8" fill="#ff8a80"/>
+      <g fill="#6be3a4">
+        <rect x="150" y="350" width="52" height="16" rx="7"/>
+        <rect x="168" y="332" width="16" height="52" rx="7"/>
+      </g>
+      <g fill="#ffc46b"><circle cx="316" cy="344" r="9"/><circle cx="344" cy="368" r="9"/></g>
+      <g fill="#ff8a80"><circle cx="316" cy="368" r="9"/><circle cx="344" cy="344" r="9"/></g>
+      <rect x="236" y="382" width="40" height="8" rx="4" fill="#6f7c8c"/>
+    </symbol>
+
+    <symbol id="icon-e" viewBox="0 0 512 512">
+      <rect width="512" height="512" fill="url(#gBg)"/>
+      <rect width="512" height="512" fill="url(#gGlow)"/>
+      <rect x="88" y="118" width="336" height="276" rx="44" fill="#0b131b" stroke="#6ccbff" stroke-width="8"/>
+      <path d="M104 256 H408" stroke="#26313d" stroke-width="4"/>
+      <path d="M204 186 L282 240 L244 246 L260 282 L236 294 L220 258 L192 282 Z" fill="#eaf6ff"/>
+      <g fill="#6be3a4">
+        <rect x="132" y="326" width="44" height="14" rx="6"/>
+        <rect x="147" y="311" width="14" height="44" rx="6"/>
+      </g>
+      <g fill="none" stroke="#6ccbff" stroke-linecap="round">
+        <path d="M350 322 q22 18 22 46" stroke-width="8"/>
+        <path d="M370 306 q34 26 34 62" stroke-width="7" opacity=".55"/>
+        <path d="M390 292 q46 34 46 76" stroke-width="6" opacity=".28"/>
+      </g>
+      <circle cx="344" cy="318" r="10" fill="#6be3a4"/>
+    </symbol>
+
+    <symbol id="glyph-a" viewBox="0 0 64 64">
+      <rect x="7" y="10" width="50" height="17" rx="4" fill="none" stroke="currentColor" stroke-width="3"/>
+      <rect x="7" y="30" width="50" height="21" rx="4" fill="none" stroke="currentColor" stroke-width="3"/>
+      <path d="M23.05 16 Q23 15 23.83 15.55 L31.17 20.45 Q32 21 31.04 21.27 L29.46 21.73 Q28.5 22 28.85 22.94 L29.65 25.06 Q30 26 29.07 26.37 L28.43 26.63 Q27.5 27 27.11 26.08 L26.39 24.42 Q26 23.5 25.29 24.21 L24.21 25.29 Q23.5 26 23.45 25 Z" fill="currentColor"/>
+      <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".85">
+        <path d="M37.5 20 Q37.5 16.5 34 16.5"/>
+        <path d="M39.5 20 Q39.5 14.5 34 14.5"/>
+      </g>
+      <path d="M14 40.5h8M18 36.5v8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+      <g fill="currentColor">
+        <circle cx="44" cy="36" r="2.1"/>
+        <circle cx="50" cy="42" r="2.1"/>
+        <circle cx="44" cy="48" r="2.1"/>
+        <circle cx="38" cy="42" r="2.1"/>
+      </g>
+    </symbol>
+
+    <symbol id="glyph-b" viewBox="0 0 64 64">
+      <rect x="9" y="9" width="46" height="46" rx="12" fill="none" stroke="currentColor" stroke-width="3"/>
+      <path d="M9 45 L45 9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      <path d="M35 33 L47 40 L41 42 L44 49 L40 51 L37 44 L33 48 Z" fill="currentColor"/>
+    </symbol>
+
+    <symbol id="glyph-c" viewBox="0 0 64 64">
+      <g transform="rotate(-7 32 22)">
+        <rect x="7" y="13" width="50" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="3"/>
+      </g>
+      <g transform="rotate(7 32 43)">
+        <rect x="7" y="35" width="50" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="3"/>
+      </g>
+      <path d="M32 29v8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="32" cy="33" r="3" fill="currentColor"/>
+    </symbol>
+
+    <symbol id="glyph-d" viewBox="0 0 64 64">
+      <rect x="19" y="5" width="26" height="54" rx="8" fill="none" stroke="currentColor" stroke-width="2.6"/>
+      <rect x="23" y="10" width="18" height="11" rx="2.5" fill="currentColor" opacity=".9"/>
+      <rect x="23" y="25" width="18" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.2"/>
+      <path d="M25 45h7M28.5 41.5v7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      <circle cx="39" cy="43" r="1.8" fill="currentColor"/>
+      <circle cx="43" cy="47" r="1.8" fill="currentColor"/>
+    </symbol>
+
+    <symbol id="glyph-e" viewBox="0 0 64 64">
+      <rect x="7" y="14" width="50" height="36" rx="9" fill="none" stroke="currentColor" stroke-width="3"/>
+      <path d="M7 32h50" stroke="currentColor" stroke-width="2" opacity=".45"/>
+      <path d="M25 22 L38 30 L32 31.5 L35 38 L30 40 L27 33 L23 37 Z" fill="currentColor"/>
+      <path d="M44 40q5 4 5 10M50 36q8 6 8 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" opacity=".8"/>
+    </symbol>
+  </defs>
+</svg>
+
+<main class="page">
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">DuoRemote / Brand 01</div>
+      <h1>五个图标方向，<br>先选一个“远控 + 双屏”的锚点。</h1>
+      <p class="lede">
+        面向 Retroid Pocket Duo、AYN Thor 这类双屏 Android 掌机。A 已按 Bili-Duo 的扁平双屏语言调整；
+        其余方向保留作形状对照。每个方向都给出启动图标、系统遮罩、单色版与应用内品牌位。
+      </p>
+    </div>
+    <div class="meta">
+      <strong>uuremote-duo</strong><br>
+      2026-11-18 · 方向探索<br>
+      512 / 192 / 96 / 48
+    </div>
+  </header>
+
+  <section class="grid" aria-label="五个图标方向">
+    <article class="card" data-variant="twin-d">
+      <div class="card-top">
+        <span class="index">A</span>
+        <div><h2>双屏手柄</h2><p class="tag">系列语言 · 最稳</p></div>
+      </div>
+      <div class="stage"><div class="app-icon"><svg viewBox="0 0 512 512"><use href="#icon-a"/></svg></div></div>
+      <div class="masks">
+        <div class="mask-item"><div class="mask circle"><svg viewBox="0 0 512 512"><use href="#icon-a"/></svg></div><span>圆形</span></div>
+        <div class="mask-item"><div class="mask squircle"><svg viewBox="0 0 512 512"><use href="#icon-a"/></svg></div><span>圆角</span></div>
+        <div class="mask-item"><div class="mask rounded"><svg viewBox="0 0 512 512"><use href="#icon-a"/></svg></div><span>方形</span></div>
+        <div class="mono-row">
+          <span class="mono-label">单色</span>
+          <div class="mono dark"><svg viewBox="0 0 64 64"><use href="#glyph-a"/></svg></div>
+          <div class="mono light"><svg viewBox="0 0 64 64"><use href="#glyph-a"/></svg></div>
+        </div>
+      </div>
+      <p class="desc">参考 Bili-Duo 的扁平双屏语言：黑底、双屏描边、白 + 青色。上屏中间偏左光标 + 光标右上方信号弧；下屏方向盘 + 经典 ABXY 菱形；两块屏贴近，48px 仍能读出双屏 + 手柄。</p>
+      <div class="inapp-bar">
+        <div class="brand-tile"><svg viewBox="0 0 64 64"><use href="#glyph-a"/></svg></div>
+        <div class="brand-copy"><strong>DuoRemote</strong><span>非官方 UU 远程</span></div>
+        <div class="online-chip"><i></i>1 台在线</div>
+      </div>
+    </article>
+
+    <article class="card" data-variant="split">
+      <div class="card-top">
+        <span class="index">B</span>
+        <div><h2>斜切双屏</h2><p class="tag">最现代 · 单色友好</p></div>
+      </div>
+      <div class="stage"><div class="app-icon"><svg viewBox="0 0 512 512"><use href="#icon-b"/></svg></div></div>
+      <div class="masks">
+        <div class="mask-item"><div class="mask circle"><svg viewBox="0 0 512 512"><use href="#icon-b"/></svg></div><span>圆形</span></div>
+        <div class="mask-item"><div class="mask squircle"><svg viewBox="0 0 512 512"><use href="#icon-b"/></svg></div><span>圆角</span></div>
+        <div class="mask-item"><div class="mask rounded"><svg viewBox="0 0 512 512"><use href="#icon-b"/></svg></div><span>方形</span></div>
+        <div class="mono-row">
+          <span class="mono-label">单色</span>
+          <div class="mono dark"><svg viewBox="0 0 64 64"><use href="#glyph-b"/></svg></div>
+          <div class="mono light"><svg viewBox="0 0 64 64"><use href="#glyph-b"/></svg></div>
+        </div>
+      </div>
+      <p class="desc">一块屏斜切成两块：青色半边放方向盘，深色半边放光标。<b>最像现代应用图标</b>，单色版也最干净；代价是“双屏”需要一点解释。</p>
+      <div class="inapp-bar">
+        <div class="brand-tile"><svg viewBox="0 0 64 64"><use href="#glyph-b"/></svg></div>
+        <div class="brand-copy"><strong>DuoRemote</strong><span>非官方 UU 远程</span></div>
+        <div class="online-chip"><i></i>1 台在线</div>
+      </div>
+    </article>
+
+    <article class="card" data-variant="portal">
+      <div class="card-top">
+        <span class="index">C</span>
+        <div><h2>门户连线</h2><p class="tag">最强调“连上了”</p></div>
+      </div>
+      <div class="stage"><div class="app-icon"><svg viewBox="0 0 512 512"><use href="#icon-c"/></svg></div></div>
+      <div class="masks">
+        <div class="mask-item"><div class="mask circle"><svg viewBox="0 0 512 512"><use href="#icon-c"/></svg></div><span>圆形</span></div>
+        <div class="mask-item"><div class="mask squircle"><svg viewBox="0 0 512 512"><use href="#icon-c"/></svg></div><span>圆角</span></div>
+        <div class="mask-item"><div class="mask rounded"><svg viewBox="0 0 512 512"><use href="#icon-c"/></svg></div><span>方形</span></div>
+        <div class="mono-row">
+          <span class="mono-label">单色</span>
+          <div class="mono dark"><svg viewBox="0 0 64 64"><use href="#glyph-c"/></svg></div>
+          <div class="mono light"><svg viewBox="0 0 64 64"><use href="#glyph-c"/></svg></div>
+        </div>
+      </div>
+      <p class="desc">两块屏轻微倾斜，中间用一条发光连接桥扣住。动态感最强，适合表达“本地手柄 ↔ 远端桌面”；但 48px 下斜屏和桥会略糊。</p>
+      <div class="inapp-bar">
+        <div class="brand-tile"><svg viewBox="0 0 64 64"><use href="#glyph-c"/></svg></div>
+        <div class="brand-copy"><strong>DuoRemote</strong><span>非官方 UU 远程</span></div>
+        <div class="online-chip"><i></i>1 台在线</div>
+      </div>
+    </article>
+
+    <article class="card" data-variant="handheld">
+      <div class="card-top">
+        <span class="index">D</span>
+        <div><h2>掌机正面</h2><p class="tag">最像一台掌机</p></div>
+      </div>
+      <div class="stage"><div class="app-icon"><svg viewBox="0 0 512 512"><use href="#icon-d"/></svg></div></div>
+      <div class="masks">
+        <div class="mask-item"><div class="mask circle"><svg viewBox="0 0 512 512"><use href="#icon-d"/></svg></div><span>圆形</span></div>
+        <div class="mask-item"><div class="mask squircle"><svg viewBox="0 0 512 512"><use href="#icon-d"/></svg></div><span>圆角</span></div>
+        <div class="mask-item"><div class="mask rounded"><svg viewBox="0 0 512 512"><use href="#icon-d"/></svg></div><span>方形</span></div>
+        <div class="mono-row">
+          <span class="mono-label">单色</span>
+          <div class="mono dark"><svg viewBox="0 0 64 64"><use href="#glyph-d"/></svg></div>
+          <div class="mono light"><svg viewBox="0 0 64 64"><use href="#glyph-d"/></svg></div>
+        </div>
+      </div>
+      <p class="desc">正面机身、上下双屏、方向盘与 ABXY 全部画出来。设备主人一眼能认；细节最多，48px 下容易变成“游戏机”而不是“远控”。</p>
+      <div class="inapp-bar">
+        <div class="brand-tile"><svg viewBox="0 0 64 64"><use href="#glyph-d"/></svg></div>
+        <div class="brand-copy"><strong>DuoRemote</strong><span>非官方 UU 远程</span></div>
+        <div class="online-chip"><i></i>1 台在线</div>
+      </div>
+    </article>
+
+    <article class="card" data-variant="cursor">
+      <div class="card-top">
+        <span class="index">E</span>
+        <div><h2>光标屏幕</h2><p class="tag">最像远控</p></div>
+      </div>
+      <div class="stage"><div class="app-icon"><svg viewBox="0 0 512 512"><use href="#icon-e"/></svg></div></div>
+      <div class="masks">
+        <div class="mask-item"><div class="mask circle"><svg viewBox="0 0 512 512"><use href="#icon-e"/></svg></div><span>圆形</span></div>
+        <div class="mask-item"><div class="mask squircle"><svg viewBox="0 0 512 512"><use href="#icon-e"/></svg></div><span>圆角</span></div>
+        <div class="mask-item"><div class="mask rounded"><svg viewBox="0 0 512 512"><use href="#icon-e"/></svg></div><span>方形</span></div>
+        <div class="mono-row">
+          <span class="mono-label">单色</span>
+          <div class="mono dark"><svg viewBox="0 0 64 64"><use href="#glyph-e"/></svg></div>
+          <div class="mono light"><svg viewBox="0 0 64 64"><use href="#glyph-e"/></svg></div>
+        </div>
+      </div>
+      <p class="desc">屏幕、光标、右下角信号弧线，远控语义最直接；中间一道分割线暗示双屏。双屏感最弱，更像一个“远程桌面功能图标”。</p>
+      <div class="inapp-bar">
+        <div class="brand-tile"><svg viewBox="0 0 64 64"><use href="#glyph-e"/></svg></div>
+        <div class="brand-copy"><strong>DuoRemote</strong><span>非官方 UU 远程</span></div>
+        <div class="online-chip"><i></i>1 台在线</div>
+      </div>
+    </article>
+
+    <aside class="card decision" data-variant="decision">
+      <div class="card-top">
+        <span class="index">?</span>
+        <div><h2>怎么选</h2><p class="tag">先定“第一眼”的语义</p></div>
+      </div>
+      <dl>
+        <div><dt>A · 双屏手柄</dt><dd>最稳，且与 Bili-Duo 同一套扁平双屏语言；缩到 48px 仍像“上下两块屏 + 手柄”。推荐主方案。</dd></div>
+        <div><dt>B · 斜切双屏</dt><dd>最现代，单色最好做；但“双屏”需要一点解释。适合做主题图标或商店图备选。</dd></div>
+        <div><dt>C · 门户连线</dt><dd>最强调连接；斜屏在小尺寸略糊，更适合启动页插画，而不是主图标。</dd></div>
+        <div><dt>D · 掌机正面</dt><dd>最像掌机，但细节多；48px 容易读成“游戏机”，远控语义最弱。</dd></div>
+        <div><dt>E · 光标屏幕</dt><dd>最像远控，双屏感最弱；更像功能图标，适合控制中心或通知栏。</dd></div>
+      </dl>
+      <p class="pick">建议：<b>A 做主图标</b>，B 做单色/主题图标备选；C 留给启动页大图。这样“双屏 + 远控”在小尺寸和品牌场景都不丢。</p>
+    </aside>
+  </section>
+
+  <section class="inapp" aria-label="应用内品牌位">
+    <div class="section-head">
+      <h2>应用内怎么出现</h2>
+      <p>以下以方向 A 为例。图标在应用内不重复画完整启动图标，而是用单色 glyph + 文字；大图只出现在登录、空状态和关于页。</p>
+    </div>
+    <div class="inapp-grid">
+      <div class="screen">
+        <span class="screen-label">01 / 登录或启动页</span>
+        <div class="login-mock">
+          <div class="login-icon"><svg viewBox="0 0 512 512"><use href="#icon-a"/></svg></div>
+          <div class="login-name">DuoRemote</div>
+          <div class="login-sub">非官方 UU 远程客户端</div>
+          <div class="login-actions">
+            <span class="pill-primary">扫码登录</span>
+            <span class="pill-ghost">短信登录</span>
+          </div>
+        </div>
+        <span class="screen-note">68px 图标 · 只在品牌区出现一次</span>
+      </div>
+
+      <div class="screen">
+        <span class="screen-label">02 / 设备列表空状态</span>
+        <div class="empty-mock">
+          <div class="empty-icon"><svg viewBox="0 0 512 512"><use href="#icon-a"/></svg></div>
+          <div class="empty-title">还没有设备</div>
+          <div class="empty-body">在手机上打开 UU 远程并绑定电脑，然后按 Y 刷新。</div>
+          <span class="empty-pill">刷新设备</span>
+        </div>
+        <span class="screen-note">58px 图标 · 低饱和，不抢操作</span>
+      </div>
+
+      <div class="screen">
+        <span class="screen-label">03 / 关于页</span>
+        <div class="about-mock">
+          <div class="about-card">
+            <div class="about-icon"><svg viewBox="0 0 512 512"><use href="#icon-a"/></svg></div>
+            <div class="about-copy">
+              <span class="about-name">DuoRemote</span>
+              <span class="about-meta">v0.2.0 · com.sour.duoremote</span>
+            </div>
+            <span class="about-license">GPL-3.0</span>
+          </div>
+        </div>
+        <span class="screen-note">48px 图标 · 与版本、许可证同排</span>
+      </div>
+
+      <div class="screen">
+        <span class="screen-label">04 / 主题图标与尺寸</span>
+        <div class="theme-mock">
+          <div class="theme-item">
+            <div class="theme-icon dark"><svg viewBox="0 0 64 64"><use href="#glyph-a"/></svg></div>
+            <span>深色 / 单色</span>
+          </div>
+          <div class="theme-item">
+            <div class="theme-icon light"><svg viewBox="0 0 64 64"><use href="#glyph-a"/></svg></div>
+            <span>浅色 / 单色</span>
+          </div>
+          <div class="sizes">
+            <div class="size-item"><div class="size-box" style="width:24px;height:24px"><svg viewBox="0 0 64 64"><use href="#glyph-a"/></svg></div><span>24</span></div>
+            <div class="size-item"><div class="size-box" style="width:32px;height:32px"><svg viewBox="0 0 64 64"><use href="#glyph-a"/></svg></div><span>32</span></div>
+            <div class="size-item"><div class="size-box" style="width:40px;height:40px"><svg viewBox="0 0 64 64"><use href="#glyph-a"/></svg></div><span>40</span></div>
+          </div>
+        </div>
+        <span class="screen-note">Android 13 主题图标 · glyph 不含背景</span>
+      </div>
+    </div>
+  </section>
+
+  <footer class="next">
+    <div>
+      <h2>选定后做什么</h2>
+      <p>先定方向，再进入工程化。下面的导出和分层不影响这次选择，但需要在实现前一次做对。</p>
+    </div>
+    <div class="steps">
+      <div class="step"><b>Adaptive 三层</b><span>背景、前景、单色；108dp 画布，安全区 66dp。</span></div>
+      <div class="step"><b>全尺寸导出</b><span>48 / 72 / 96 / 192 / 512；Play Store 512×512。</span></div>
+      <div class="step"><b>应用内替换</b><span>登录、空状态、关于、通知栏和主题图标。</span></div>
+    </div>
+  </footer>
+</main>
+</body>
+</html>

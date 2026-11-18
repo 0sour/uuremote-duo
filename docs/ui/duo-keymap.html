@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 按键映射 / 宏 / 轮盘</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  [hidden] { display: none !important; }
+  .km-canvas .game-window {
+    position: absolute; left: 70px; top: 48px; width: 690px; height: 350px;
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,.14);
+    background: linear-gradient(150deg, rgba(16,30,46,.92), rgba(6,10,16,.94));
+    box-shadow: 0 24px 60px rgba(0,0,0,.55);
+  }
+  .km-canvas .game-window .gw-top { height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.08); color: rgba(255,255,255,.55); font-size: 9px; }
+  .km-canvas .game-window .gw-body { padding: 16px; display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
+  .km-canvas .game-window .gw-hero { height: 120px; border-radius: 10px; background: radial-gradient(circle at 60% 30%, rgba(108,203,255,.34), transparent 62%), linear-gradient(145deg, #14324A, #071018); border: 1px solid rgba(108,203,255,.18); }
+  .km-canvas .game-window .gw-lines { display: flex; flex-direction: column; gap: 8px; }
+  .km-canvas .game-window .gw-line { height: 7px; border-radius: 4px; background: rgba(255,255,255,.10); }
+  .km-canvas .game-window .gw-line.w70 { width: 70%; } .km-canvas .game-window .gw-line.w45 { width: 45%; }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+</head>
+<body data-gp-back="duo-control-center.html?panel=more" data-gp-x="添加按键" data-gp-y="删除">
+<header class="page-head">
+  <div>
+    <h1>按键映射（参考稿）· 方案 / 虚拟按键 / 宏 / 轮盘</h1>
+    <p>官方移动端用虚拟按键补齐没有实体手柄的手机；Duo 手柄常驻，因此本项目只保留“实体手柄→键鼠”的方向。本页仅作官方形态参考，未排期；不做触屏虚拟按键/轮盘。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Key mapping</span>
+    <span class="pill warning">参考稿 · 未排期</span>
+    <span class="pill">不做虚拟按键/轮盘</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">参考稿 · 未排期 · 不做触屏虚拟按键/轮盘</span>
+  <a href="single-keymap.html" style="margin-left:10px">单屏参考 →</a>
+</div>
+
+<main class="duo">
+  <!-- ===================== TOP: virtual key canvas ===================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">上屏 · 832×468dp · 官方形态参考（只读）</div>
+    <section class="screen-top">
+      <div class="km-canvas">
+        <div class="wallpaper"></div>
+        <div class="game-window">
+          <div class="gw-top"><span class="win-dot"></span><span class="win-dot"></span><span class="win-dot"></span><span style="margin-left:6px">Game Preview — 窗口化运行</span></div>
+          <div class="gw-body">
+            <div class="gw-hero"></div>
+            <div class="gw-lines"><div class="gw-line w70"></div><div class="gw-line"></div><div class="gw-line w45"></div><div class="gw-line w70"></div><div class="gw-line"></div></div>
+          </div>
+        </div>
+
+        <div class="km-badge"><svg class="icon sm"><use href="#i-eye"/></svg>官方形态参考 · 本项目不做触屏虚拟按键</div>
+
+        <!-- wheel -->
+        <div class="vk wheel sel" style="left:96px;top:286px">W<small class="sub">WASD 轮盘</small></div>
+        <!-- action buttons -->
+        <div class="vk fire" style="left:650px;top:300px">A</div>
+        <div class="vk small" style="left:708px;top:270px">B</div>
+        <div class="vk small" style="left:708px;top:330px">X</div>
+        <div class="vk small" style="left:650px;top:360px">Y</div>
+        <!-- right click + macro -->
+        <div class="vk small" style="left:596px;top:362px">右键</div>
+        <div class="vk macro" style="right:36px;top:82px">宏 1<small class="sub">Shift+1+2</small></div>
+        <div class="vk small" style="right:44px;top:150px">隐藏</div>
+
+        <div class="stat-chip"><span class="dot"></span> 方案：动作游戏 · 12 个按键</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="hinge">DUO</div>
+
+  <!-- ===================== BOTTOM: editor ===================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">下屏 · 640×480dp · 方案与按键属性</div>
+    <section class="screen-bottom">
+      <div class="bottom-content">
+        <div class="bottom-head">
+          <div class="grow"><div class="title">按键映射</div><div class="sub"><span class="crumb"><b>串流</b><span class="sep">›</span><a href="duo-control-center.html?panel=more">控制中心</a><span class="sep">›</span><b>按键映射</b></span> · 参考稿</div></div>
+          <span class="chip accent" style="height:22px;font-size:9px">实时预览</span>
+          <div class="cc-switch on" style="margin-left:4px"></div>
+          <button class="icon-btn" title="关闭"><svg class="icon"><use href="#i-x"/></svg></button>
+        </div>
+
+        <div class="km-layout">
+          <aside class="km-schemes">
+            <div class="km-scheme active" data-gp-tab tabindex="0" data-gp-initial data-gp-label="动作游戏方案">动作游戏<small>官方方案 · 12 键</small></div>
+            <div class="km-scheme" data-gp-tab tabindex="0">我的方案 A<small>自定义 · 8 键</small></div>
+            <div class="km-scheme" data-gp-tab tabindex="0">射击游戏<small>官方方案 · 16 键</small></div>
+            <div class="km-scheme" data-gp-tab tabindex="0" style="border-style:dashed;color:var(--accent)">+ 新建方案</div>
+            <div class="cc-note" style="margin-top:auto;padding:6px 4px">方案保存到“我的方案”，可复制/重命名/删除。</div>
+          </aside>
+
+          <div class="km-editor">
+            <div class="row between">
+              <div><div class="cc-title">W · 方向轮盘</div><div class="cc-sub">类型：鼠标按键与轮盘 · 绑定 WASD</div></div>
+              <span class="chip accent" style="height:20px;font-size:8px">已选中</span>
+            </div>
+
+            <div class="cc-group">
+              <div class="cc-group-title">按键</div>
+              <div class="km-prop">
+                <span class="k">类型</span>
+                <div class="cc-seg"><button>控制键</button><button class="on">轮盘</button><button>宏</button><button>右键</button></div>
+              </div>
+              <div class="km-prop">
+                <span class="k">大小</span>
+                <div class="km-slider"><i style="width:64%"></i><b style="left:64%"></b></div>
+                <span class="km-val">64%</span>
+              </div>
+              <div class="km-prop">
+                <span class="k">不透明度</span>
+                <div class="km-slider"><i style="width:58%"></i><b style="left:58%"></b></div>
+                <span class="km-val">58%</span>
+              </div>
+              <div class="km-prop">
+                <span class="k">触发</span>
+                <div class="cc-seg"><button class="on">按下</button><button>长按</button><button>切换</button></div>
+              </div>
+            </div>
+
+            <div class="cc-group">
+              <div class="cc-group-title">轮盘方向</div>
+              <div class="km-prop">
+                <span class="k">上</span><div class="cc-seg"><button class="on">W</button><button>↑</button><button>无</button></div>
+              </div>
+              <div class="km-prop">
+                <span class="k">左 / 右</span><div class="cc-seg"><button class="on">A</button><button class="on">D</button><button>S</button></div>
+              </div>
+              <div class="km-prop">
+                <span class="k">下</span><div class="cc-seg"><button class="on">S</button><button>↓</button><button>无</button></div>
+              </div>
+            </div>
+
+            <div class="cc-note">轮盘默认 30% 不透明度，按下后变不透明；“自由摇杆”需放在左下角，“固定摇杆”可任意摆放。</div>
+
+            <div class="km-actions">
+              <button class="cc-btn"><svg class="icon sm"><use href="#i-plus"/></svg>添加按键</button>
+              <button class="cc-btn">复制</button>
+              <button class="cc-btn primary">保存方案</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-foot">
+          <div class="keys"><span><kbd>L1</kbd>/<kbd>R1</kbd> 切方案</span><span><kbd>B</kbd> 选择</span><span><kbd>A</kbd> 返回</span><span><kbd>X</kbd>/<kbd>Y</kbd> 添加/删除</span><span><kbd>START</kbd> 说明</span></div>
+          <span>编辑中不会向远端发送按键</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  设计说明：本页保留官方按键编辑器的形态，供以后做“实体手柄→键鼠”模板时参考，<b>不代表排期</b>。
+  结论：Duo 一体手柄常驻，屏幕上再画一层虚拟按键只会遮挡画面；轮盘本质是触屏摇杆，物理摇杆更好。
+  后续若实现，只做“实体手柄→键鼠”的内置模板和每设备方案，不做屏幕覆盖层。
+  单屏参考稿见 <a href="single-keymap.html">single-keymap.html</a>。
+</aside>
+<script>
+  document.querySelectorAll('.km-scheme').forEach((el) => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.km-scheme').forEach((x) => x.classList.toggle('active', x === el));
+    });
+  });
+</script>
+</body>
+</html>

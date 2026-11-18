@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 单屏设置</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  .sp-body { flex: 1; min-height: 0; display: flex; }
+  .sp-panel { display: none; flex-direction: column; gap: 7px; }
+  .sp-panel.is-active { display: flex; }
+  .sp-panel .setting-row { min-height: 40px; padding: 6px 10px; }
+  .sp-panel .setting-row .k { font-size: 11px; }
+  .sp-panel .setting-row .d { font-size: 9px; }
+  .sp-panel .setting-row .v { font-size: 10px; }
+  .sp-panel .cc-switch { flex: none; }
+  .sp-cat { min-height: 28px; font-size: 10px; }
+  .sp-content { padding: 9px 12px; }
+  .single-app-frame.size-bottom .sp-content { padding: 7px 9px; }
+  .single-app-frame.size-bottom .sp-panel .setting-row { min-height: 38px; }
+  .sp-note { color: var(--text-tertiary); font-size: 8px; line-height: 1.4; padding: 2px; }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+<script src="single.js" defer></script>
+</head>
+<body data-gp-back="duo-settings.html" data-gp-x="恢复默认" data-gp-y="关于">
+<header class="page-head">
+  <div>
+    <h1>单屏设置 · 832×468 / 640×480</h1>
+    <p>单屏设置把分类与选项放在同一屏：832 宽左侧分类、右侧选项；640 宽用 L1/R1 切分类。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Single · Settings</span>
+    <span class="pill">即时保存</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">宿主</span>
+  <button data-single-size="top" class="active">上屏 832×468</button>
+  <button data-single-size="bottom">下屏 640×480</button>
+  <a href="duo-settings.html" style="margin-left:10px">双屏版 →</a>
+</div>
+
+<main class="duo">
+  <div class="screen-wrap">
+    <div class="screen-label" data-single-label>单屏 · 上屏 Activity · 832×468dp · 手柄焦点在此</div>
+    <section class="single-app-frame size-top" data-single-frame>
+      <div class="sa-bar">
+        <a class="icon-btn" href="duo-settings.html" title="返回双屏版"><svg class="icon"><use href="#i-back"/></svg></a>
+        <div>
+          <div class="sa-title">设置</div>
+          <div class="sa-sub"><span class="crumb"><b>主页</b><span class="sep">›</span>设置</span> · 改动立即保存</div>
+        </div>
+        <span class="chip ghost" style="height:20px;font-size:8px">1080p · 60 · 高清</span>
+        <div class="sa-actions"><button class="icon-btn" title="关闭"><svg class="icon"><use href="#i-x"/></svg></button></div>
+      </div>
+
+      <div class="sa-tabs">
+        <button class="active" data-sa-tab="sp-picture" data-gp-initial>画面</button>
+        <button data-sa-tab="sp-screen">屏幕</button>
+        <button data-sa-tab="sp-device">外设</button>
+        <button data-sa-tab="sp-security">安全</button>
+        <button data-sa-tab="sp-network">网络</button>
+        <button data-sa-tab="sp-appearance">外观</button>
+        <button data-sa-tab="sp-about">关于</button>
+      </div>
+
+      <div class="sp-body">
+        <nav class="sa-side">
+          <div class="item active" data-sa-tab="sp-picture" tabindex="0" data-gp-initial data-gp-label="画面设置"><svg class="icon sm"><use href="#i-monitor"/></svg>画面</div>
+          <div class="item" data-sa-tab="sp-screen" tabindex="0"><svg class="icon sm"><use href="#i-fullscreen"/></svg>屏幕</div>
+          <div class="item" data-sa-tab="sp-device" tabindex="0"><svg class="icon sm"><use href="#i-gamepad"/></svg>外设</div>
+          <div class="item" data-sa-tab="sp-security" tabindex="0"><svg class="icon sm"><use href="#i-shield"/></svg>安全</div>
+          <div class="item" data-sa-tab="sp-network" tabindex="0"><svg class="icon sm"><use href="#i-wifi"/></svg>网络</div>
+          <div class="item" data-sa-tab="sp-appearance" tabindex="0"><svg class="icon sm"><use href="#i-sun"/></svg>外观</div>
+          <div class="item" data-sa-tab="sp-about" tabindex="0"><svg class="icon sm"><use href="#i-info"/></svg>关于</div>
+          <div class="sp-note" style="margin-top:auto;padding:6px 4px">画面类改动在串流内控制中心也能改，状态共享。</div>
+        </nav>
+
+        <div class="sa-content sp-content">
+          <!-- picture -->
+          <div class="sp-panel is-active" data-sa-panel="sp-picture">
+            <div class="setting-row"><div><div class="k">分辨率</div><div class="d">跟随本机 / 指定；重连生效</div></div><div class="row gap-8"><span class="v">1920 × 1080</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div></div>
+            <div class="setting-row"><div><div class="k">帧率上限</div><div class="d">高帧率需要电脑/网络支持</div></div><div class="row gap-8"><span class="v">60 FPS</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div></div>
+            <div class="setting-row"><div><div class="k">画质</div><div class="d">流畅 / 清晰 / 高清 / 超清 / 原画</div></div><div class="row gap-8"><span class="v">高清</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div></div>
+            <div class="setting-row"><div><div class="k">码率上限</div><div class="d">自动或手动上限</div></div><div class="row gap-8"><span class="v">自动</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div></div>
+            <div class="setting-row"><div><div class="k">缩放</div><div class="d">适应窗口 / 铺满 / 原始大小</div></div><div class="row gap-8"><span class="v">适应</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div></div>
+            <div class="setting-row"><div><div class="k">HDR / 真彩<span class="tag">后续</span></div><div class="d">需要被控端能力协商</div></div><span class="v">关闭</span></div>
+            <a class="sp-note" href="single-control-center.html" style="color:var(--accent);text-decoration:none">串流内快捷入口：控制中心 → 画面与显示 →</a>
+          </div>
+
+          <!-- screen -->
+          <div class="sp-panel" data-sa-panel="sp-screen">
+            <div class="setting-row"><div><div class="k">屏幕模式</div><div class="d">自动：有下屏用双屏，无下屏用单屏</div></div><div class="row gap-8"><span class="v">自动</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div></div>
+            <div class="setting-row"><div><div class="k">单屏宿主</div><div class="d">自动优先上屏；可固定上屏/下屏</div></div><div class="row gap-8"><span class="v">自动</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div></div>
+            <div class="setting-row"><div><div class="k">旋转屏幕</div><div class="d">仅横屏；竖屏不在设计范围</div></div><span class="v">横屏</span></div>
+            <div class="setting-row"><div><div class="k">小窗模式<span class="tag">后续</span></div><div class="d">画中画/悬浮窗，后台也能看</div></div><span class="v">未开启</span></div>
+            <div class="setting-row"><div><div class="k">双屏亮度联动<span class="tag">后续</span></div><div class="d">上下屏亮度/待机一起变化</div></div><div class="cc-switch"></div></div>
+          </div>
+
+          <!-- device -->
+          <div class="sp-panel" data-sa-panel="sp-device">
+            <div class="setting-row"><div><div class="k">手柄直通</div><div class="d">串流时把手柄作为标准 Xbox 发送到电脑</div></div><div class="cc-switch on"></div></div>
+            <div class="setting-row"><div><div class="k">震动反馈</div><div class="d">解析 gpd_vibration 驱动本机马达</div></div><div class="cc-switch on"></div></div>
+            <div class="setting-row"><div><div class="k">手柄风格</div><div class="d">Standard / Retro；只改本机 UI 的 A/B 语义</div></div><div class="row gap-8"><span class="v">Standard</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div></div>
+            <div class="setting-row"><div><div class="k">摇杆死区 / Y 反向</div><div class="d">16% 死区；左右摇杆可分别反向</div></div><div class="row gap-8"><span class="v">16%</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div></div>
+            <div class="setting-row"><div><div class="k">触摸板灵敏度</div><div class="d">相对鼠标的移动倍率</div></div><span class="v">1.0×</span></div>
+            <div class="setting-row"><div><div class="k">直接触摸视频</div><div class="d">单指点按左键、长按拖拽、双指滚动</div></div><div class="cc-switch on"></div></div>
+            <div class="setting-row"><div><div class="k">默认键盘</div><div class="d">内置拼音 / 系统输入法</div></div><div class="row gap-8"><span class="v">内置拼音</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div></div>
+          </div>
+
+          <!-- security -->
+          <div class="sp-panel" data-sa-panel="sp-security">
+            <div class="setting-row"><div><div class="k">同步剪贴板</div><div class="d">双向纯文本，≤2048 字</div></div><div class="cc-switch"></div></div>
+            <div class="setting-row"><div><div class="k">仅观看</div><div class="d">拦截键鼠/触屏/文字/手柄输入</div></div><div class="cc-switch"></div></div>
+            <div class="setting-row"><div><div class="k">断开后锁屏<span class="tag">后续</span></div><div class="d">结束远控时锁定被控端</div></div><div class="cc-switch"></div></div>
+            <div class="setting-row"><div><div class="k">防窥 / 隐私屏<span class="tag">后续</span></div><div class="d">关闭被控端物理屏</div></div><span class="v">未开启</span></div>
+            <div class="setting-row"><div><div class="k">文件传输</div><div class="d">保存路径 / 缓存 / 同时任务</div></div><a class="mini-btn" href="single-files.html">打开</a></div>
+          </div>
+
+          <!-- network -->
+          <div class="sp-panel" data-sa-panel="sp-network">
+            <div class="setting-row"><div><div class="k">自动重连</div><div class="d">3 次退避：2 / 4 / 8 秒</div></div><div class="cc-switch on"></div></div>
+            <div class="setting-row"><div><div class="k">诊断统计</div><div class="d">工具条/OSD/状态页显示 RTT、FPS、码率</div></div><div class="cc-switch on"></div></div>
+            <div class="setting-row"><div><div class="k">中继 / 代理</div><div class="d">默认自动；可强制直连或中继</div></div><div class="row gap-8"><span class="v">自动</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div></div>
+            <div class="setting-row"><div><div class="k">网络状态</div><div class="d">P2P 直连 · UDP · 18 ms</div></div><span class="v">查看</span></div>
+          </div>
+
+          <!-- appearance -->
+          <div class="sp-panel" data-sa-panel="sp-appearance">
+            <div class="setting-row"><div><div class="k">主题</div><div class="d">暗色 / 亮色 / 跟随系统</div></div><div class="row gap-8"><span class="v">暗色</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div></div>
+            <div class="setting-row"><div><div class="k">焦点环</div><div class="d">白色 / 青色；亮色主题自动改墨环</div></div><div class="row gap-8"><span class="v">白色</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div></div>
+            <div class="setting-row"><div><div class="k">触感反馈</div><div class="d">键盘/触摸板/工具条按键</div></div><div class="cc-switch on"></div></div>
+            <div class="setting-row"><div><div class="k">按键音</div><div class="d">系统 CLICK 音效</div></div><div class="cc-switch"></div></div>
+          </div>
+
+          <!-- about -->
+          <div class="sp-panel" data-sa-panel="sp-about">
+            <div class="setting-row"><div><div class="k">DuoRemote 0.2.0</div><div class="d">非官方 UU 远程客户端 · GPL-3.0</div></div><span class="v">检查更新</span></div>
+            <div class="setting-row"><div><div class="k">开源许可</div><div class="d">GPL-3.0 · 第三方组件声明</div></div><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+            <div class="setting-row"><div><div class="k">隐私与安全</div><div class="d">key 加密保存；日志脱敏</div></div><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+            <div class="setting-row"><div><div class="k">帮助与反馈</div><div class="d">导出脱敏诊断</div></div><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+            <div class="setting-row"><div><div class="k">恢复默认设置</div><div class="d">保留登录态/签名材料/设备</div></div><span class="chip warning" style="height:20px;font-size:8px">需确认</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sa-foot">
+        <div class="keys"><span><kbd>L1</kbd>/<kbd>R1</kbd> 切分类</span><span><kbd>B</kbd> 选择/切换</span><span><kbd>A</kbd> 返回</span><span><kbd>←</kbd><kbd>→</kbd> 改值</span><span><kbd>START</kbd> 说明</span></div>
+        <span>设置即时生效 · 画面类重连生效</span>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  单屏设置与双屏设置共享同一份状态；832 宽左侧分类、右侧选项，640 宽分类变成顶部页签。
+  分类和选项在同一焦点树里，L1/R1 只切分类，不存在上下屏焦点切换。双屏版见 <a href="duo-settings.html">duo-settings.html</a>。
+</aside>
+</body>
+</html>

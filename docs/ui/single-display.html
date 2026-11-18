@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 单屏多屏</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  .sd-tabs { display: flex !important; flex: none; gap: 4px; padding: 8px 12px 0; }
+  .sd-tabs button { height: 26px; padding: 0 10px; border-radius: 7px; border: 1px solid transparent; background: transparent; color: var(--text-tertiary); font: 500 10px var(--font); }
+  .sd-tabs button.active { color: var(--accent); background: var(--accent-soft); border-color: rgba(108,203,255,.24); }
+  .sd-panel { display: none; flex: 1; min-height: 0; flex-direction: column; }
+  .sd-panel.is-active { display: flex; }
+  .sd-content { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 9px 12px 8px; }
+  .single-app-frame.size-bottom .sd-content { display: flex; flex-direction: column; overflow-y: auto; padding: 7px 9px; }
+  .sd-list { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+  .sd-card { border: 1px solid var(--outline); border-radius: 10px; background: var(--surface-1); padding: 8px 10px; display: flex; align-items: center; gap: 9px; }
+  .sd-card.active { background: var(--accent-soft); border-color: rgba(108,203,255,.4); }
+  .sd-card .thumb { width: 46px; height: 29px; border-radius: 5px; border: 1px solid var(--outline); display: grid; place-items: center; color: var(--text-tertiary); font: 500 8px var(--mono); flex: none; }
+  .sd-card .nm { font-size: 10px; font-weight: 600; }
+  .sd-card .meta { font-size: 8px; color: var(--text-tertiary); margin-top: 2px; }
+  .sd-card .right { margin-left: auto; }
+  .sd-side { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+  .sd-actions { display: flex; gap: 6px; margin-top: auto; }
+  .sd-actions .cc-btn { height: 29px; font-size: 9px; }
+  .sd-actions .cc-btn.primary { flex: 1; justify-content: center; }
+  .sd-mini { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; border: 1px solid var(--outline); border-radius: 10px; background: var(--surface-1); padding: 7px; }
+  .sd-mini .k { font-size: 7px; color: var(--text-tertiary); letter-spacing: .06em; text-transform: uppercase; }
+  .sd-mini .v { font: 600 15px var(--mono); margin-top: 1px; }
+  .sd-mini .v small { font: 500 8px var(--mono); color: var(--text-tertiary); }
+  .sd-note { color: var(--text-tertiary); font-size: 8px; line-height: 1.45; }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+<script src="single.js" defer></script>
+</head>
+<body data-gp-back="duo-display.html" data-gp-x="新建虚拟屏" data-gp-y="删除当前">
+<header class="page-head">
+  <div>
+    <h1>单屏多屏协作 · 832×468 / 640×480</h1>
+    <p>屏幕切换、超级屏参数、虚拟屏创建都在同一个 frame；832 宽列表与参数并排，640 宽上下排列。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Single · Displays</span>
+    <span class="pill">最多 5 屏</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">宿主</span>
+  <button data-single-size="top" class="active">上屏 832×468</button>
+  <button data-single-size="bottom">下屏 640×480</button>
+  <a href="duo-display.html" style="margin-left:10px">双屏版 →</a>
+</div>
+
+<main class="duo">
+  <div class="screen-wrap">
+    <div class="screen-label" data-single-label>单屏 · 上屏 Activity · 832×468dp · 手柄焦点在此</div>
+    <section class="single-app-frame size-top" data-single-frame>
+      <div class="sa-bar">
+        <a class="icon-btn" href="duo-display.html" title="返回双屏版"><svg class="icon"><use href="#i-back"/></svg></a>
+        <div>
+          <div class="sa-title">画面与显示</div>
+          <div class="sa-sub"><span class="crumb"><b>串流</b><span class="sep">›</span>控制中心<span class="sep">›</span>多屏</span> · 主屏 2560×1440</div>
+        </div>
+        <span class="chip warning" style="height:20px;font-size:8px">物理屏已关闭</span>
+        <div class="sa-actions"><button class="icon-btn" title="关闭"><svg class="icon"><use href="#i-x"/></svg></button></div>
+      </div>
+
+      <div class="sd-tabs">
+        <button class="active" data-sa-tab="sd-mon">显示器</button>
+        <button data-sa-tab="sd-super">超级屏</button>
+        <button data-sa-tab="sd-virt">虚拟屏</button>
+      </div>
+
+      <!-- displays -->
+      <div class="sd-panel is-active" data-sa-panel="sd-mon">
+        <div class="sd-content">
+          <div class="sd-list">
+            <div class="sd-card active" tabindex="0" data-gp-initial data-gp-label="屏幕 1 · 主屏">
+              <div class="thumb">16:9</div>
+              <div class="grow"><div class="nm">屏幕 1 · 主屏</div><div class="meta">2560×1440 · 165 Hz · 100%</div></div>
+              <span class="chip accent" style="height:18px;font-size:7px">当前</span>
+            </div>
+            <div class="sd-card"><div class="thumb">16:9</div><div class="grow"><div class="nm">屏幕 2</div><div class="meta">1920×1080 · 60 Hz · 扩展</div></div><span class="chip ghost" style="height:18px;font-size:7px">扩展</span></div>
+            <div class="sd-card"><div class="thumb" style="border-style:dashed;color:var(--accent)">+</div><div class="grow"><div class="nm">虚拟屏 1</div><div class="meta">2560×1440 · 扩展 · 跟随主屏</div></div><span class="chip ghost" style="height:18px;font-size:7px">新建</span></div>
+            <div class="sd-note">已有屏幕通过列表切换；虚拟屏创建入口在“虚拟屏”页签。</div>
+          </div>
+          <div class="sd-side">
+            <div class="sd-mini">
+              <div><div class="k">屏幕</div><div class="v">3<small>/ 5</small></div></div>
+              <div><div class="k">虚拟屏</div><div class="v">1<small>/ 3</small></div></div>
+              <div><div class="k">当前</div><div class="v" style="font-size:10px">屏幕 1</div></div>
+            </div>
+            <div class="cc-group" style="margin:0">
+              <div class="cc-group-title">当前屏参数</div>
+              <div class="cc-row"><div class="grow"><div class="k">分辨率 / 刷新率</div><div class="d">缩放 100% · H.264</div></div><span class="v">2560×1440 · 165Hz</span></div>
+            </div>
+            <div class="sd-actions">
+              <button class="cc-btn primary">切换到此屏</button>
+              <button class="cc-btn">跟随当前</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- super -->
+      <div class="sd-panel" data-sa-panel="sd-super">
+        <div class="sd-content">
+          <div class="sd-list">
+            <div class="cc-banner"><svg class="icon sm"><use href="#i-warning"/></svg>进入超级屏会关闭被控端物理屏，画面只显示在一个窗口；退出后恢复。</div>
+            <div class="cc-group">
+              <div class="cc-group-title">超级屏</div>
+              <div class="cc-row"><div class="grow"><div class="k">分辨率</div><div class="d">最高 4K；Mac 被控端最高 4K/60</div></div><div class="cc-seg"><button>2560×1440</button><button class="on">3840×2160</button></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">帧率</div><div class="d">Windows 被控端最高 144</div></div><div class="cc-seg"><button>60</button><button>120</button><button class="on">144</button></div></div>
+              <div class="cc-row"><div class="grow"><div class="k">内容</div><div class="d">多屏内容合并到一个窗口</div></div><span class="v">合并 2 屏</span></div>
+            </div>
+          </div>
+          <div class="sd-side">
+            <div class="sd-note">超级屏与虚拟屏互斥；远程协助模式不支持超级屏。</div>
+            <div class="sd-actions">
+              <button class="cc-btn danger">退出超级屏</button>
+              <button class="cc-btn primary">应用并重连</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- virtual -->
+      <div class="sd-panel" data-sa-panel="sd-virt">
+        <div class="sd-content">
+          <div class="sd-list">
+            <div class="sd-card active"><div class="thumb">16:9</div><div class="grow"><div class="nm">虚拟屏 1</div><div class="meta">2560×1440 · 扩展 · 跟随主屏</div></div><span class="chip accent" style="height:18px;font-size:7px">当前</span></div>
+            <div class="sd-card"><div class="thumb">16:9</div><div class="grow"><div class="nm">虚拟屏 2</div><div class="meta">1920×1080 · 扩展 · 60 Hz</div></div><span class="chip ghost" style="height:18px;font-size:7px">离线</span></div>
+            <div class="sd-note">虚拟屏 1 / 3 · 物理+虚拟 4 / 5，还可建 1 块。</div>
+          </div>
+          <div class="sd-side">
+            <div class="cc-group" style="margin:0">
+              <div class="cc-group-title">新建虚拟屏</div>
+              <div class="cc-row"><div class="grow"><div class="k">分辨率</div><div class="d">默认跟随被控端主屏</div></div><span class="v">2560×1440</span></div>
+              <div class="cc-row"><div class="grow"><div class="k">显示模式</div><div class="d">默认扩展</div></div><div class="cc-seg"><button class="on">扩展</button><button>复制</button></div></div>
+            </div>
+            <div class="sd-actions">
+              <button class="cc-btn primary"><svg class="icon sm"><use href="#i-plus"/></svg>新建虚拟屏</button>
+              <button class="cc-btn danger">删除当前</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sa-foot">
+        <div class="keys"><span><kbd>L1</kbd>/<kbd>R1</kbd> 切页签</span><span><kbd>B</kbd> 切换/确认</span><span><kbd>X</kbd> 新建</span><span><kbd>Y</kbd> 删除</span><span><kbd>A</kbd> 返回</span><span><kbd>START</kbd> 说明</span></div>
+        <span>单屏单焦点 · 超级屏与虚拟屏互斥</span>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  单屏多屏页把“显示器 / 超级屏 / 虚拟屏”做成同一屏的页签，列表与参数在 832 宽时并排、640 宽时上下排列。
+  双屏版的上屏只做当前屏幕预览，屏幕切换全部在下屏；单屏版则全部收进唯一的操作区。双屏版见 <a href="duo-display.html">duo-display.html</a>。
+</aside>
+</body>
+</html>

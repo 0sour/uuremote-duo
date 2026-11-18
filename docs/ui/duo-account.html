@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 账号</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+</head>
+<body data-gp-back="duo-home.html" data-gp-x="退出登录" data-gp-y="刷新设备">
+<header class="page-head">
+  <div>
+    <h1>账号 · 摘要 / 刷新设备 / 退出登录</h1>
+    <p>账号页只做账号相关动作：刷新设备、二次确认退出、账号与安全说明；退出只清 token，保留签名材料与设置。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Account</span>
+    <span class="pill">EncryptedSharedPreferences</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">入口：主页账号按钮 / X</span>
+  <a href="single-account.html" style="margin-left:10px">单屏版 →</a>
+</div>
+
+<main class="duo">
+  <!-- TOP -->
+  <div class="screen-wrap">
+    <div class="screen-label">上屏 · 832×468dp · 账号摘要（只读）</div>
+    <section class="screen-top">
+      <div class="top-bg"></div>
+      <div class="top-content">
+        <div class="top-bar">
+          <div class="brand"><span class="brand-mark">D</span><span>DuoRemote</span><span class="chip ghost" style="height:20px;font-size:9px">账号</span></div>
+          <div class="row gap-8" style="color:var(--text-tertiary);font-size:11px"><span class="status-dot online"></span><span>已登录</span></div>
+        </div>
+
+        <div class="top-main">
+          <div class="device-hero">
+            <div class="eyebrow">当前账号</div>
+            <div class="row gap-12" style="margin-bottom:10px">
+              <div class="device-icon" style="width:56px;height:56px;border-radius:16px"><svg class="icon lg"><use href="#i-user"/></svg></div>
+              <div>
+                <h1 class="device-title" style="font-size:28px;margin:0 0 4px">demo</h1>
+                <div class="device-sub" style="margin-bottom:0"><span class="chip online" style="height:22px;font-size:9px"><span class="status-dot online" style="width:5px;height:5px;box-shadow:none"></span>已登录</span><span class="chip ghost" style="height:22px;font-size:9px">网易 UU 账号</span></div>
+              </div>
+            </div>
+
+            <div class="meta-grid" style="max-width:520px">
+              <div class="meta-item"><span class="k">在线设备</span><span class="v">3 台 · 1 台离线</span></div>
+              <div class="meta-item"><span class="k">登录方式</span><span class="v">扫码登录</span></div>
+              <div class="meta-item"><span class="k">签名材料</span><span class="v">已导入 · 指纹校验通过</span></div>
+              <div class="meta-item"><span class="k">令牌</span><span class="v mono">EncryptedSharedPreferences</span></div>
+              <div class="meta-item"><span class="k">上次同步</span><span class="v">今天 14:32</span></div>
+              <div class="meta-item"><span class="k">客户端</span><span class="v">DuoRemote 0.2.0 · GPL-3.0</span></div>
+            </div>
+          </div>
+
+          <aside class="action-card" style="min-height:250px">
+            <div>
+              <div class="eyebrow" style="margin-bottom:8px">账号操作</div>
+              <div style="font-size:15px;font-weight:600;line-height:1.35">刷新设备列表，<br>或退出当前账号</div>
+              <div class="hint" style="margin-top:10px">退出只清除登录令牌与设备列表；签名材料、设置和已安装的 APK 不会被删除。</div>
+              <div class="entry-row" style="margin-top:12px">
+                <span class="chip ghost"><svg class="icon sm"><use href="#i-refresh"/></svg>刷新设备 · Y</span>
+                <span class="chip ghost" style="color:var(--error);border-color:rgba(255,138,128,.25)"><svg class="icon sm"><use href="#i-power"/></svg>退出登录 · X · 二次确认</span>
+              </div>
+              <div class="hint" style="margin-top:10px">账号操作全部在下屏；上屏只显示当前账号与登录状态。</div>
+            </div>
+            <div>
+              <div class="keyline">
+                <span class="keycap accent">A</span><span class="connect-hint">返回</span>
+                <span style="width:1px;height:18px;background:var(--outline);margin:0 4px"></span>
+                <span class="keycap">B</span><span class="muted" style="font-size:12px">选择</span>
+              </div>
+              <div class="hint" style="margin-top:8px;font-size:10px;color:var(--text-tertiary)">退出后回到登录页；重新登录需要扫码或短信验证码。</div>
+            </div>
+          </aside>
+        </div>
+
+        <div class="top-footer">
+          <div class="keys"><span>上屏只读 · 不参与手柄焦点</span></div>
+          <div>账号信息只保存在本机</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="hinge">DUO</div>
+
+  <!-- BOTTOM -->
+  <div class="screen-wrap">
+    <div class="screen-label">下屏 · 640×480dp · 账号操作</div>
+    <section class="screen-bottom">
+      <div class="bottom-content">
+        <div class="bottom-head">
+          <div class="grow"><div class="title">账号</div><div class="sub"><span class="crumb"><a href="duo-home.html">主页</a><span class="sep">›</span><b>账号</b></span> · demo · 3 台在线</div></div>
+          <button class="icon-btn" title="返回"><svg class="icon"><use href="#i-back"/></svg></button>
+        </div>
+
+        <div class="settings-layout" style="grid-template-columns:1fr">
+          <div class="settings-body" style="padding:12px 14px;gap:8px">
+            <div class="setting-row" tabindex="0" data-gp-initial data-gp-label="刷新设备">
+              <div><div class="k">刷新设备</div><div class="d">重新拉取账号下的在线/离线设备</div></div>
+              <div class="row gap-8"><span class="v">Y</span><svg class="icon sm tertiary"><use href="#i-refresh"/></svg></div>
+            </div>
+            <div class="setting-row">
+              <div><div class="k">账号与安全</div><div class="d">签名材料已加密保存；日志脱敏</div></div>
+              <svg class="icon sm tertiary"><use href="#i-chevron"/></svg>
+            </div>
+            <div class="setting-row">
+              <div><div class="k">关于 DuoRemote</div><div class="d">GPL-3.0 · 非官方客户端</div></div>
+              <svg class="icon sm tertiary"><use href="#i-chevron"/></svg>
+            </div>
+            <div class="setting-row" style="border-color:rgba(255,138,128,.25)">
+              <div><div class="k" style="color:var(--error)">退出登录</div><div class="d">清除 token 和设备列表，保留签名材料/设置</div></div>
+              <span class="chip error" style="height:22px;font-size:9px">需确认</span>
+            </div>
+            <div class="note-box" style="margin-top:auto">退出后需要重新扫码或短信登录；如果只是想换设备，直接返回主页选择另一台即可。账号安全策略在 <a href="duo-settings.html?tab=security">设置 → 安全</a>。</div>
+          </div>
+        </div>
+
+        <div class="bottom-foot">
+          <div class="keys"><span><kbd>B</kbd> 选择</span><span><kbd>A</kbd> 返回</span><span><kbd>Y</kbd> 刷新</span><span><kbd>X</kbd> 退出</span></div>
+          <span>退出保留签名材料与设置</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  设计说明：账号页不混入设备管理；设备重命名/删除/远程开机留在设备详情。退出登录是危险操作，
+  二次确认后只清 token 与设备缓存，签名 key 仍加密保留，方便下次直接登录。
+</aside>
+</body>
+</html>

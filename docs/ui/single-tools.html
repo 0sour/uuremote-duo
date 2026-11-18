@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 单屏工具</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  .st-tabs { display: flex !important; flex: none; gap: 4px; padding: 8px 12px 0; }
+  .st-tabs button { height: 26px; padding: 0 10px; border-radius: 7px; border: 1px solid transparent; background: transparent; color: var(--text-tertiary); font: 500 10px var(--font); }
+  .st-tabs button.active { color: var(--accent); background: var(--accent-soft); border-color: rgba(108,203,255,.24); }
+  .st-panel { display: none; flex: 1; min-height: 0; flex-direction: column; gap: 8px; padding: 8px 12px; overflow-y: auto; }
+  .st-panel.is-active { display: flex; }
+  .single-app-frame.size-bottom .st-panel { padding: 7px 9px; }
+  .st-split { display: grid; grid-template-columns: 1.15fr .85fr; gap: 12px; flex: 1; min-height: 0; }
+  .single-app-frame.size-bottom .st-split { display: flex; flex-direction: column; flex: none; }
+  .st-actions { display: flex; gap: 6px; margin-top: auto; }
+  .st-actions .cc-btn { height: 30px; font-size: 9px; }
+  .st-actions .cc-btn.primary { flex: 1; justify-content: center; }
+  .st-note { color: var(--text-tertiary); font-size: 8px; line-height: 1.45; }
+  .st-preview { border: 1px solid var(--outline); border-radius: 10px; background: var(--surface-1); min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--text-tertiary); font-size: 9px; }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+<script src="single.js" defer></script>
+</head>
+<body data-gp-back="duo-tools.html" data-gp-x="确认" data-gp-y="返回">
+<header class="page-head">
+  <div>
+    <h1>单屏工具 · 832×468 / 640×480</h1>
+    <p>观看模式、远程开机、终端、端口映射做成同一屏的页签；所有危险操作在同一焦点树里二次确认。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Single · Tools</span>
+    <span class="pill">高危操作需确认</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">宿主</span>
+  <button data-single-size="top" class="active">上屏 832×468</button>
+  <button data-single-size="bottom">下屏 640×480</button>
+  <a href="duo-tools.html" style="margin-left:10px">双屏版 →</a>
+</div>
+
+<main class="duo">
+  <div class="screen-wrap">
+    <div class="screen-label" data-single-label>单屏 · 上屏 Activity · 832×468dp · 手柄焦点在此</div>
+    <section class="single-app-frame size-top" data-single-frame>
+      <div class="sa-bar">
+        <a class="icon-btn" href="duo-tools.html" title="返回双屏版"><svg class="icon"><use href="#i-back"/></svg></a>
+        <div>
+          <div class="sa-title">工具</div>
+          <div class="sa-sub"><span class="crumb"><b>串流</b><span class="sep">›</span>控制中心<span class="sep">›</span>工具</span> · 观看 · 开机 · 终端 · 端口</div>
+        </div>
+        <span class="chip ghost" style="height:20px;font-size:8px">低频 · 需确认</span>
+        <div class="sa-actions"><button class="icon-btn" title="关闭"><svg class="icon"><use href="#i-x"/></svg></button></div>
+      </div>
+
+      <div class="st-tabs">
+        <button class="active" data-sa-tab="st-watch">观看模式</button>
+        <button data-sa-tab="st-wake">远程开机</button>
+        <button data-sa-tab="st-term">终端</button>
+        <button data-sa-tab="st-ports">端口映射</button>
+      </div>
+
+      <!-- watch -->
+      <div class="st-panel is-active" data-sa-panel="st-watch">
+        <div class="st-split">
+          <div class="cc-group" style="margin:0">
+            <div class="cc-group-title">观看模式</div>
+            <div class="cc-row"><div class="grow"><div class="k">仅观看</div><div class="d">禁止键鼠、触屏、文字、手柄输入</div></div><div class="cc-switch" tabindex="0" data-gp-initial data-gp-label="仅观看"></div></div>
+            <div class="cc-row"><div class="grow"><div class="k">允许批注</div><div class="d">画笔对被控端可见，不阻止对方操作</div></div><div class="cc-switch on"></div></div>
+            <div class="cc-row"><div class="grow"><div class="k">剪贴板 / 麦克风</div><div class="d">观看模式下临时关闭</div></div><span class="v">禁用</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;min-height:0">
+            <div class="st-preview"><svg class="icon lg"><use href="#i-eye"/></svg>远控画面 · 只看不控</div>
+            <div class="st-note">批注层只在观看模式开启时可用；退出后清除。</div>
+            <div class="st-actions">
+              <button class="cc-btn primary">进入观看模式</button>
+              <button class="cc-btn"><svg class="icon sm"><use href="#i-edit"/></svg>画笔</button>
+              <button class="cc-btn"><svg class="icon sm"><use href="#i-trash"/></svg>清空</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- wake -->
+      <div class="st-panel" data-sa-panel="st-wake">
+        <div class="st-split">
+          <div class="cc-group" style="margin:0">
+            <div class="cc-group-title">远程开机</div>
+            <div class="cc-row"><div class="grow"><div class="k">目标设备</div><div class="d">客厅台式机 · 离线 · 上次 11-18 09:12</div></div><span class="v">Windows 11</span></div>
+            <div class="cc-row"><div class="grow"><div class="k">WOL 配置</div><div class="d">主板/网卡已启用，需保持电源与网络</div></div><div class="cc-switch on"></div></div>
+            <div class="cc-row"><div class="grow"><div class="k">唤醒方式</div><div class="d">同账号设备辅助唤醒 / 局域网广播</div></div><div class="cc-seg"><button class="on">辅助唤醒</button><button>局域网</button></div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;min-height:0">
+            <div class="st-preview"><svg class="icon xl"><use href="#i-power"/></svg>WOL 已配置 · 等待开机</div>
+            <div class="st-note">需目标电脑主板/网卡支持 WOL，并保持电源与网络。</div>
+            <div class="st-actions">
+              <button class="cc-btn primary">发送开机指令</button>
+              <button class="cc-btn">查看教程</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- terminal -->
+      <div class="st-panel" data-sa-panel="st-term">
+        <div class="st-split">
+          <div class="cc-group" style="margin:0">
+            <div class="cc-group-title">终端会话</div>
+            <div class="cc-row"><div class="grow"><div class="k">PowerShell · 客厅台式机</div><div class="d">C:\Users\demo · 运行中 · 00:12:48</div></div><span class="chip online" style="height:18px;font-size:7px">已连接</span></div>
+            <div class="cc-row"><div class="grow"><div class="k">新会话</div><div class="d">打开新的登录 shell；离开页面后继续运行</div></div><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+            <div class="cc-row"><div class="grow"><div class="k">接入本机终端</div><div class="d">需在被控端设置中允许</div></div><span class="v">未开启</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;min-height:0">
+            <div class="st-preview" style="align-items:flex-start;justify-content:flex-start;padding:10px;font-family:var(--mono);font-size:8px;color:var(--text-secondary)">PS C:\Users\demo&gt; uu status<br><span style="color:var(--text-tertiary)">remote: connected · p2p udp · 18 ms</span><br><span style="color:var(--text-tertiary)">display: 2560x1440 @ 165 Hz</span></div>
+            <div class="st-actions">
+              <button class="cc-btn primary">打开终端窗口</button>
+              <button class="cc-btn">结束全部会话</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ports -->
+      <div class="st-panel" data-sa-panel="st-ports">
+        <div class="st-split">
+          <div class="cc-group" style="margin:0">
+            <div class="cc-group-title">映射列表</div>
+            <div class="cc-row"><div class="grow"><div class="k">3389 → 3389</div><div class="d">TCP · 127.0.0.1 · 已连接</div></div><div class="cc-switch on"></div></div>
+            <div class="cc-row"><div class="grow"><div class="k">8080 → 80</div><div class="d">TCP · 127.0.0.1 · 已连接</div></div><div class="cc-switch on"></div></div>
+            <div class="cc-row"><div class="grow"><div class="k">添加映射</div><div class="d">本地端口 → 被控端端口；支持 TCP/UDP</div></div><svg class="icon sm tertiary"><use href="#i-plus"/></svg></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;min-height:0">
+            <div class="st-note">端口映射属高级工具，默认关闭；关闭本页或断开远控会停止所有映射。</div>
+            <div class="st-actions">
+              <button class="cc-btn primary"><svg class="icon sm"><use href="#i-plus"/></svg>添加映射</button>
+              <button class="cc-btn">全部停止</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sa-foot">
+        <div class="keys"><span><kbd>L1</kbd>/<kbd>R1</kbd> 切工具</span><span><kbd>B</kbd> 确认</span><span><kbd>A</kbd> 返回</span><span><kbd>START</kbd> 说明</span></div>
+        <span>单屏单焦点 · 高危操作二次确认</span>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  单屏工具页用页签替代双屏版的“上屏预览 + 下屏工具卡”：832 宽左设置右预览/动作，640 宽上下排列。
+  观看模式、远程开机、终端、端口映射都在同一屏完成。双屏版见 <a href="duo-tools.html">duo-tools.html</a>。
+</aside>
+</body>
+</html>

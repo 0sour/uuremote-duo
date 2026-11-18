@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 设置</title>
+<link rel="stylesheet" href="mockup.css">
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+</head>
+<body data-gp-back="duo-home.html" data-gp-x="恢复默认" data-gp-y="关于">
+<header class="page-head">
+  <div>
+    <h1>设置 · 上屏实时预览 / 下屏分类与选项</h1>
+    <p>下屏左分类 + 右选项；上屏显示当前配置摘要和外观/焦点预览，改设置时上屏即时更新。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Settings</span>
+    <span class="pill">Dark / Light</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">入口：主页设置按钮 / 串流控制中心齿轮</span>
+  <a href="single-settings.html" style="margin-left:10px">单屏版 →</a>
+</div>
+
+<main class="duo">
+  <!-- TOP -->
+  <div class="screen-wrap">
+    <div class="screen-label">上屏 · 832×468dp · 配置摘要（只读）</div>
+    <section class="screen-top">
+      <div class="top-bg"></div>
+      <div class="top-content">
+        <div class="top-bar">
+          <div class="brand">
+            <span class="brand-mark">D</span>
+            <span>DuoRemote</span>
+            <span class="chip ghost" style="height:20px;font-size:9px">设置</span>
+          </div>
+          <div class="row gap-8" style="color:var(--text-tertiary);font-size:11px">
+            <svg class="icon sm"><use href="#i-settings"/></svg>
+            <span>改动会立即保存</span>
+          </div>
+        </div>
+
+        <div style="flex:1;display:grid;grid-template-columns:1.05fr .95fr;gap:26px;padding:4px 32px 0;align-items:center">
+          <div>
+            <div class="eyebrow" style="margin-bottom:8px">当前配置</div>
+            <h1 class="device-title" style="font-size:26px;margin-bottom:16px">1080p · 60 FPS · 高清</h1>
+            <div class="meta-grid" style="max-width:520px">
+              <div class="meta-item"><span class="k">画质</span><span class="v">高清（5 档）</span></div>
+              <div class="meta-item"><span class="k">码率 / 缩放</span><span class="v mono">自动 · 适应窗口</span></div>
+              <div class="meta-item"><span class="k">外设</span><span class="v">Standard · 直通电脑</span></div>
+              <div class="meta-item"><span class="k">安全</span><span class="v">同步剪贴板关 · 仅观看关</span></div>
+              <div class="meta-item"><span class="k">触摸板</span><span class="v mono">1.0× 灵敏度 · 直接触摸开</span></div>
+              <div class="meta-item"><span class="k">屏幕</span><span class="v">自动 · 双屏优先</span></div>
+            </div>
+            <div class="row gap-8" style="margin-top:18px">
+              <span class="chip accent"><svg class="icon sm"><use href="#i-check"/></svg>已保存</span>
+              <span class="chip ghost">画面类修改后需重连</span>
+              <span class="chip ghost">串流内也能改</span>
+            </div>
+          </div>
+
+          <div class="action-card" style="min-height:250px">
+            <div>
+              <div class="eyebrow" style="margin-bottom:8px">焦点/主题预览</div>
+              <div class="device-card selected" style="height:64px;margin-bottom:8px">
+                <div class="device-icon" style="width:32px;height:32px;border-radius:9px"><svg class="icon sm"><use href="#i-monitor"/></svg></div>
+                <div class="grow">
+                  <div class="name truncate" style="font-size:13px">客厅台式机</div>
+                  <div class="meta"><span class="status-dot online"></span><span>在线</span><span class="sep"></span><span>Windows 11</span></div>
+                </div>
+              </div>
+              <div class="device-card" style="height:64px">
+                <div class="device-icon" style="width:32px;height:32px;border-radius:9px"><svg class="icon sm"><use href="#i-mac"/></svg></div>
+                <div class="grow">
+                  <div class="name truncate" style="font-size:13px">MacBook Pro</div>
+                  <div class="meta"><span class="status-dot online"></span><span>在线</span><span class="sep"></span><span>macOS 15</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="hint" style="font-size:11px;color:var(--text-tertiary);margin-top:10px">
+              焦点环：白环 2dp + 2dp 间隔 + 青色柔光。亮色主题下改为墨环。
+            </div>
+          </div>
+        </div>
+
+        <div class="top-footer">
+          <div class="keys"><span>上屏只读 · 不参与手柄焦点</span></div>
+          <div>设置只保存在本机</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="hinge">DUO</div>
+
+  <!-- BOTTOM -->
+  <div class="screen-wrap">
+    <div class="screen-label">下屏 · 640×480dp · 设置分类</div>
+    <section class="screen-bottom">
+      <div class="bottom-content">
+        <div class="bottom-head">
+          <div class="grow">
+            <div class="title">设置</div>
+            <div class="sub"><span class="crumb"><a href="duo-home.html">主页</a><span class="sep">›</span><b>设置</b></span> · 画面 · 屏幕 · 外设 · 安全 · 网络 · 外观 · 关于</div>
+          </div>
+          <button class="icon-btn" title="返回"><svg class="icon"><use href="#i-back"/></svg></button>
+        </div>
+
+        <div class="settings-layout">
+          <nav class="settings-cats">
+            <div class="cat active" data-settings-tab="picture" tabindex="0" data-gp-initial data-gp-label="画面设置"><svg class="icon sm"><use href="#i-monitor"/></svg>画面</div>
+            <div class="cat" data-settings-tab="screen"><svg class="icon sm"><use href="#i-fullscreen"/></svg>屏幕</div>
+            <div class="cat" data-settings-tab="device"><svg class="icon sm"><use href="#i-gamepad"/></svg>外设</div>
+            <div class="cat" data-settings-tab="security"><svg class="icon sm"><use href="#i-shield"/></svg>安全</div>
+            <div class="cat" data-settings-tab="network"><svg class="icon sm"><use href="#i-wifi"/></svg>网络</div>
+            <div class="cat" data-settings-tab="appearance"><svg class="icon sm"><use href="#i-sun"/></svg>外观</div>
+            <div class="cat" data-settings-tab="about"><svg class="icon sm"><use href="#i-info"/></svg>关于</div>
+          </nav>
+
+          <div class="settings-body" style="overflow-y:auto">
+            <div data-settings-panel="picture">
+              <div class="setting-row">
+                <div><div class="k">分辨率</div><div class="d">跟随本机 / 指定；重连生效</div></div>
+                <div class="row gap-8"><span class="v">1920 × 1080</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">帧率上限</div><div class="d">高帧率需要电脑/网络支持</div></div>
+                <div class="row gap-8"><span class="v">60 FPS</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">画质</div><div class="d">流畅 / 清晰 / 高清 / 超清 / 原画</div></div>
+                <div class="row gap-8"><span class="v">高清</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">码率上限</div><div class="d">自动或手动上限</div></div>
+                <div class="row gap-8"><span class="v">自动</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">缩放</div><div class="d">适应窗口 / 铺满 / 原始大小</div></div>
+                <div class="row gap-8"><span class="v">适应</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <a class="cc-note" href="duo-control-center.html" style="color:var(--accent);text-decoration:none;padding-top:2px">串流内快捷入口：控制中心 → 画面与显示（改分辨率/帧率/画质/码率）→</a>
+            </div>
+
+            <div data-settings-panel="screen" hidden>
+              <div class="setting-row">
+                <div><div class="k">屏幕模式</div><div class="d">自动：有下屏用双屏，无下屏用单屏</div></div>
+                <div class="row gap-8"><span class="v">自动</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">单屏宿主</div><div class="d">单屏时使用上屏 Activity 或下屏 Presentation</div></div>
+                <div class="row gap-8"><span class="v">自动（优先上屏）</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">旋转</div><div class="d">横屏；竖屏不在 v1 范围</div></div>
+                <div class="row gap-8"><span class="v">自动</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">小窗模式</div><div class="d">画中画 / 悬浮窗；后台也能看（后续）</div></div>
+                <div class="switch"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">双屏亮度联动</div><div class="d">上下屏亮度一起调（后续）</div></div>
+                <div class="switch"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">保持唤醒</div><div class="d">串流/传输期间不自动息屏</div></div>
+                <div class="switch on"></div>
+              </div>
+            </div>
+
+            <div data-settings-panel="device" hidden>
+              <div class="setting-row">
+                <div><div class="k">手柄直通</div><div class="d">关闭后只用于本地导航</div></div>
+                <div class="switch on"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">震动反馈</div><div class="d">解析远端 gpd_vibration</div></div>
+                <div class="switch on"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">按键风格</div><div class="d">Duo 实体丝印与 Xbox 布局</div></div>
+                <div class="row gap-8"><span class="v">Standard</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">摇杆死区</div><div class="d">8% / 16% / 25%</div></div>
+                <div class="row gap-8"><span class="v">16%</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">触摸板灵敏度</div><div class="d">0.8× / 1.0× / 1.2×</div></div>
+                <div class="row gap-8"><span class="v">1.0×</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">直接触摸视频</div><div class="d">点哪指哪；与触摸板光标同步</div></div>
+                <div class="switch on"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">默认键盘</div><div class="d">内置拼音 / 系统 IME</div></div>
+                <div class="row gap-8"><span class="v">内置拼音</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">候选数</div><div class="d">拼音候选条显示数量</div></div>
+                <div class="row gap-8"><span class="v">7</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+            </div>
+
+            <div data-settings-panel="security" hidden>
+              <div class="setting-row">
+                <div><div class="k">同步剪贴板</div><div class="d">文字双向，≤2048 字；默认关闭</div></div>
+                <div class="switch"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">仅观看</div><div class="d">禁止键鼠、触屏、文字、手柄输入</div></div>
+                <div class="switch"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">断开后锁定远端</div><div class="d">关闭最后一个会话时请求锁屏（后续）</div></div>
+                <div class="switch"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">防窥 / 隐私屏</div><div class="d">关闭被控端物理屏或增强防窥（后续）</div></div>
+                <div class="switch"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">指纹 / 自动解锁</div><div class="d">需电脑端支持（后续）</div></div>
+                <div class="row gap-8"><span class="v">未配置</span></div>
+              </div>
+            </div>
+
+            <div data-settings-panel="network" hidden>
+              <div class="setting-row">
+                <div><div class="k">自动重连</div><div class="d">断线后 2/4/8 秒重试，共 3 次</div></div>
+                <div class="switch on"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">诊断统计</div><div class="d">显示 RTT / FPS / 码率 / 丢包</div></div>
+                <div class="switch"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">中继连接</div><div class="d">直连不稳定时使用 TURN（后续）</div></div>
+                <div class="switch"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">代理</div><div class="d">系统 / 直连 / 手动 HTTP/SOCKS5</div></div>
+                <div class="row gap-8"><span class="v">系统</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">端口</div><div class="d">自动选择可用本地端口</div></div>
+                <div class="row gap-8"><span class="v">自动</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+            </div>
+
+            <div data-settings-panel="appearance" hidden>
+              <div class="setting-row">
+                <div><div class="k">主题</div><div class="d">亮色 / 暗色 / 跟随系统</div></div>
+                <div class="row gap-8"><span class="v">跟随系统</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">焦点环</div><div class="d">白环 + 柔光 / 纯青环</div></div>
+                <div class="row gap-8"><span class="v">白色</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">触感反馈</div><div class="d">键盘 / 触摸板 / 工具条</div></div>
+                <div class="switch on"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">按键声音</div><div class="d">系统 CLICK 音效</div></div>
+                <div class="switch"></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">界面缩放</div><div class="d">按宽度自适应</div></div>
+                <div class="row gap-8"><span class="v">100%</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+            </div>
+
+            <div data-settings-panel="about" hidden>
+              <div class="setting-row">
+                <div><div class="k">DuoRemote</div><div class="d">非官方 UU 远程客户端 · GPL-3.0</div></div>
+                <div class="row gap-8"><span class="v">0.2.0</span></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">检查更新</div><div class="d">公开仓库地址待定（后续）</div></div>
+                <div class="row gap-8"><span class="v">检查</span><svg class="icon sm tertiary"><use href="#i-chevron"/></svg></div>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">开源许可</div><div class="d">GPL-3.0 · 第三方组件声明</div></div>
+                <svg class="icon sm tertiary"><use href="#i-chevron"/></svg>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">隐私与安全</div><div class="d">key 加密保存；日志脱敏</div></div>
+                <svg class="icon sm tertiary"><use href="#i-chevron"/></svg>
+              </div>
+              <div class="setting-row">
+                <div><div class="k">帮助与反馈</div><div class="d">导出诊断、问题反馈</div></div>
+                <svg class="icon sm tertiary"><use href="#i-chevron"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-foot">
+          <div class="keys">
+            <span><kbd>L1</kbd>/<kbd>R1</kbd> 切分类</span>
+            <span><kbd>B</kbd> 选择</span>
+            <span><kbd>A</kbd> 返回</span>
+            <span><kbd>START</kbd> 说明</span>
+          </div>
+          <span>设置即时生效 · 画面类重连生效</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  分类内容：画面（分辨率/帧率上限/画质/码率/缩放/HDR/编码）、屏幕（屏幕模式/单屏宿主/旋转/小窗）、
+  外设（手柄直通/震动/风格/死区/Y 反向/触摸板灵敏度/直接触摸/键盘默认/候选数）、
+  安全（同步剪贴板/仅观看/断开锁屏/防窥）、网络（自动重连/诊断/中继/代理）、
+  外观（亮暗/跟随系统/焦点环/触感/按键音）、关于（版本/许可/非官方声明/更新）。
+  与官方一致：画面类在串流内“控制中心 → 画面与显示”还有一份快捷入口，状态与这里共享。
+</aside>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabs = [...document.querySelectorAll('[data-settings-tab]')];
+    const panels = [...document.querySelectorAll('[data-settings-panel]')];
+    function open(name) {
+      tabs.forEach(t => t.classList.toggle('active', t.dataset.settingsTab === name));
+      panels.forEach(p => { p.hidden = p.dataset.settingsPanel !== name; });
+    }
+    tabs.forEach(t => t.addEventListener('click', () => open(t.dataset.settingsTab)));
+    open(new URLSearchParams(location.search).get('tab') || 'picture');
+  });
+</script>
+</body>
+</html>

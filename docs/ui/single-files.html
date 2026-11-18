@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 单屏文件传输</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  .sf-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.15fr .85fr; grid-template-rows: 1fr 1fr; gap: 8px; padding: 10px 12px 8px; }
+  .sf-browse { grid-row: 1 / 3; }
+  .sf-queue { grid-column: 2; grid-row: 1; }
+  .sf-store { grid-column: 2; grid-row: 2; }
+  .single-app-frame.size-bottom .sf-body { display: flex; flex-direction: column; padding: 8px 10px; }
+  .single-app-frame.size-bottom .sf-browse,
+  .single-app-frame.size-bottom .sf-queue,
+  .single-app-frame.size-bottom .sf-store { grid-column: auto; grid-row: auto; flex: 1; }
+  .sf-card { border: 1px solid var(--outline); border-radius: var(--radius-md); background: var(--surface-1); min-height: 0; display: flex; flex-direction: column; }
+  .sf-card-head { height: 28px; padding: 0 9px; flex: none; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid rgba(46,55,66,.45); font-size: 10px; font-weight: 600; }
+  .sf-card-head .sub { margin-left: auto; color: var(--text-tertiary); font-size: 8px; font-weight: 400; }
+  .sf-card-body { padding: 7px 9px; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+  .sf-quick { display: flex; gap: 4px; flex: none; }
+  .sf-quick button { height: 22px; padding: 0 6px; border-radius: 6px; border: 1px solid var(--outline); background: var(--surface-2); color: var(--text-secondary); font: 500 8px var(--font); display: inline-flex; align-items: center; gap: 3px; }
+  .sf-quick button.on { color: var(--accent); border-color: rgba(108,203,255,.3); background: var(--accent-soft); }
+  .sf-crumb-row { display: flex; align-items: center; gap: 5px; flex: none; }
+  .sf-list { border: 1px solid var(--outline); border-radius: 8px; background: var(--surface-inset); overflow: hidden; }
+  .sf-row { height: 28px; padding: 0 8px; display: grid; grid-template-columns: 18px 1fr 58px 68px; align-items: center; gap: 6px; font-size: 9px; color: var(--text-secondary); }
+  .sf-row + .sf-row { border-top: 1px solid rgba(46,55,66,.38); }
+  .sf-row.head { height: 21px; color: var(--text-tertiary); font-size: 7px; letter-spacing: .06em; text-transform: uppercase; background: rgba(255,255,255,.02); }
+  .sf-row.sel { background: var(--accent-soft); color: var(--text-primary); }
+  .sf-row .check { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--outline-strong); display: flex; align-items: center; justify-content: center; color: var(--on-accent); }
+  .sf-row.sel .check { background: var(--accent); border-color: var(--accent); }
+  .sf-row .nm { display: flex; align-items: center; gap: 5px; min-width: 0; }
+  .sf-row .nm span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .sf-row .sz, .sf-row .dt { font: 500 8px var(--mono); color: var(--text-tertiary); }
+  .sf-actions { display: flex; align-items: center; gap: 5px; flex: none; }
+  .sf-actions .cc-btn { height: 27px; font-size: 9px; }
+  .sf-actions .cc-btn.primary { flex: 1; justify-content: center; }
+  .sf-qitem { padding: 6px 0; border-bottom: 1px solid rgba(46,55,66,.35); }
+  .sf-qitem:last-child { border-bottom: 0; }
+  .sf-qtop { display: flex; align-items: center; gap: 5px; font-size: 9px; }
+  .sf-qtop .meta { margin-left: auto; font: 500 8px var(--mono); color: var(--text-tertiary); }
+  .sf-qbar { height: 4px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 4px; }
+  .sf-qbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent-strong), var(--accent)); }
+  .sf-qbar i.ok { background: var(--online); }
+  .sf-store-row { display: flex; align-items: center; min-height: 21px; border-bottom: 1px solid rgba(46,55,66,.32); font-size: 9px; }
+  .sf-store-row .k { color: var(--text-tertiary); }
+  .sf-store-row .v { margin-left: auto; font: 500 8px var(--mono); color: var(--text-secondary); }
+  .sf-note { color: var(--text-tertiary); font-size: 8px; line-height: 1.4; }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+<script src="single.js" defer></script>
+</head>
+<body data-gp-back="duo-files.html" data-gp-x="上传文件" data-gp-y="下载选中 (2)">
+<header class="page-head">
+  <div>
+    <h1>单屏文件传输 · 832×468 / 640×480</h1>
+    <p>单屏只有一个焦点树。832 宽时浏览、队列、存储并排；640 时用 L1/R1 切三个页签，所有动作仍在同一屏。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Single · Files</span>
+    <span class="pill">B 打开 · X 上传 · Y 下载</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">宿主</span>
+  <button data-single-size="top" class="active">上屏 832×468</button>
+  <button data-single-size="bottom">下屏 640×480</button>
+  <a href="duo-files.html" style="margin-left:10px">双屏版 →</a>
+</div>
+
+<main class="duo">
+  <div class="screen-wrap">
+    <div class="screen-label" data-single-label>单屏 · 上屏 Activity · 832×468dp · 手柄焦点在此</div>
+    <section class="single-app-frame size-top" data-single-frame>
+      <div class="sa-bar">
+        <a class="icon-btn" href="duo-files.html" title="返回双屏版"><svg class="icon"><use href="#i-back"/></svg></a>
+        <div>
+          <div class="sa-title">文件传输</div>
+          <div class="sa-sub"><span class="crumb"><b>主页</b><span class="sep">›</span>文件传输</span> · 客厅台式机 · 2 个任务</div>
+        </div>
+        <span class="chip online" style="height:20px;font-size:8px"><span class="status-dot online" style="width:5px;height:5px;box-shadow:none"></span>在线</span>
+        <div class="sa-actions">
+          <button class="icon-btn" data-sysime title="搜索文件"><svg class="icon"><use href="#i-search"/></svg></button>
+          <button class="icon-btn" title="关闭"><svg class="icon"><use href="#i-x"/></svg></button>
+        </div>
+      </div>
+
+      <div class="sa-tabs">
+        <button class="active" data-sa-tab="sf-browse">浏览</button>
+        <button data-sa-tab="sf-queue">队列</button>
+        <button data-sa-tab="sf-store">存储</button>
+      </div>
+
+      <div class="sf-body">
+        <!-- browse -->
+        <div class="sf-card sf-browse sa-panel is-active" data-sa-panel="sf-browse">
+          <div class="sf-card-head">远程文件<span class="sub">此电脑 › 文档</span></div>
+          <div class="sf-card-body" style="flex:1;min-height:0">
+            <div class="sf-quick">
+              <button><svg class="icon sm"><use href="#i-clock"/></svg>最近</button>
+              <button class="on"><svg class="icon sm"><use href="#i-folder"/></svg>文档</button>
+              <button><svg class="icon sm"><use href="#i-download"/></svg>下载</button>
+              <button><svg class="icon sm"><use href="#i-monitor"/></svg>C:</button>
+              <button><svg class="icon sm"><use href="#i-monitor"/></svg>D:</button>
+            </div>
+            <div class="sf-crumb-row"><span class="crumb"><span>此电脑</span><span class="sep">›</span><b data-file-crumb>文档</b></span><span style="margin-left:auto;font-size:8px;color:var(--text-tertiary)">已选 2 项 · 1.2 GB</span></div>
+            <div class="sf-list">
+              <div class="sf-row head"><span></span><span>名称</span><span>大小</span><span>修改时间</span></div>
+              <div class="sf-row" data-kind="folder" data-name="项目资料" data-gp-initial tabindex="0">
+                <span class="check"></span><div class="nm"><svg class="icon sm" style="color:var(--accent)"><use href="#i-folder"/></svg><span>项目资料</span></div><span class="sz">—</span><span class="dt">11-18 14:02</span>
+              </div>
+              <div class="sf-row sel" data-kind="folder" data-name="设计稿">
+                <span class="check"><svg class="icon sm" style="width:8px;height:8px"><use href="#i-check"/></svg></span><div class="nm"><svg class="icon sm" style="color:var(--accent)"><use href="#i-folder"/></svg><span>设计稿</span></div><span class="sz">—</span><span class="dt">11-18 13:40</span>
+              </div>
+              <div class="sf-row" data-kind="folder" data-name="会议记录">
+                <span class="check"></span><div class="nm"><svg class="icon sm" style="color:var(--accent)"><use href="#i-folder"/></svg><span>会议记录</span></div><span class="sz">—</span><span class="dt">11-17 18:22</span>
+              </div>
+              <div class="sf-row sel" data-kind="file" data-name="预算.xlsx">
+                <span class="check"><svg class="icon sm" style="width:8px;height:8px"><use href="#i-check"/></svg></span><div class="nm"><svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-file"/></svg><span>预算.xlsx</span></div><span class="sz">2.4 MB</span><span class="dt">11-18 11:05</span>
+              </div>
+              <div class="sf-row" data-kind="file" data-name="演示.pptx">
+                <span class="check"></span><div class="nm"><svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-file"/></svg><span>演示.pptx</span></div><span class="sz">18.6 MB</span><span class="dt">11-18 09:31</span>
+              </div>
+              <div class="sf-row" data-kind="file" data-name="说明.pdf">
+                <span class="check"></span><div class="nm"><svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-file"/></svg><span>说明.pdf</span></div><span class="sz">6.1 MB</span><span class="dt">11-16 16:48</span>
+              </div>
+            </div>
+            <div class="sf-actions">
+              <button class="cc-btn"><svg class="icon sm"><use href="#i-plus"/></svg>新建</button>
+              <button class="cc-btn"><svg class="icon sm"><use href="#i-upload"/></svg>上传</button>
+              <button class="cc-btn primary"><svg class="icon sm"><use href="#i-download"/></svg>下载选中 (2)</button>
+            </div>
+            <div class="sf-note">B 打开文件夹 / 选择文件 · X 上传 · Y 下载 · 被控端同时只能一个传输任务</div>
+          </div>
+        </div>
+
+        <!-- queue -->
+        <div class="sf-card sf-queue sa-panel" data-sa-panel="sf-queue">
+          <div class="sf-card-head">传输队列<span class="sub">2 进行 · 1 完成</span></div>
+          <div class="sf-card-body" style="flex:1;min-height:0;overflow-y:auto">
+            <div class="sf-qitem">
+              <div class="sf-qtop"><svg class="icon sm" style="color:var(--accent)"><use href="#i-download"/></svg><b>设计稿/</b><span class="meta">62% · 18.4 MB/s</span></div>
+              <div class="sf-qbar"><i style="width:62%"></i></div>
+              <div class="sf-actions" style="margin-top:4px"><button class="mini-btn">暂停</button><button class="mini-btn">取消</button><span style="margin-left:auto;font:500 8px var(--mono);color:var(--text-tertiary)">00:42</span></div>
+            </div>
+            <div class="sf-qitem">
+              <div class="sf-qtop"><svg class="icon sm" style="color:var(--accent)"><use href="#i-file"/></svg><b>预算.xlsx</b><span class="meta">34% · 8.2 MB/s</span></div>
+              <div class="sf-qbar"><i style="width:34%"></i></div>
+              <div class="sf-actions" style="margin-top:4px"><button class="mini-btn">暂停</button><button class="mini-btn">取消</button><span style="margin-left:auto;font:500 8px var(--mono);color:var(--text-tertiary)">00:18</span></div>
+            </div>
+            <div class="sf-qitem">
+              <div class="sf-qtop"><svg class="icon sm" style="color:var(--online)"><use href="#i-check"/></svg><b>演示.pptx</b><span class="meta">已完成 · 18.6 MB</span></div>
+              <div class="sf-qbar"><i class="ok" style="width:100%"></i></div>
+            </div>
+            <div class="sf-note">断线后保留进度，重连从断点继续。</div>
+          </div>
+        </div>
+
+        <!-- storage -->
+        <div class="sf-card sf-store sa-panel" data-sa-panel="sf-store">
+          <div class="sf-card-head">本机存储<span class="sub">/sdcard/UU/Download</span></div>
+          <div class="sf-card-body" style="flex:1;min-height:0">
+            <div class="sf-store-row"><span class="k">可用空间</span><span class="v">42.1 GB / 128 GB</span></div>
+            <div class="sf-store-row"><span class="k">传输缓存</span><span class="v">1.8 GB</span></div>
+            <div class="sf-store-row"><span class="k">同时任务</span><span class="v">1 个</span></div>
+            <div class="sf-actions" style="margin-top:auto">
+              <button class="cc-btn">更改路径</button>
+              <button class="cc-btn danger">清缓存</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sa-foot">
+        <div class="keys"><span><kbd>B</kbd> 打开/选择</span><span><kbd>A</kbd> 返回</span><span><kbd>X</kbd> 上传</span><span><kbd>Y</kbd> 下载</span><span><kbd>L1</kbd>/<kbd>R1</kbd> 页签</span><span><kbd>START</kbd> 说明</span></div>
+        <span>单屏单焦点 · 不切屏</span>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  单屏版把“浏览 / 队列 / 存储”放在同一屏：832 宽三栏并排，640 宽用 L1/R1 切页签。
+  焦点始终在这一个 frame 里，方向键不会跑到不存在的第二块屏。双屏版见 <a href="duo-files.html">duo-files.html</a>。
+</aside>
+</body>
+</html>

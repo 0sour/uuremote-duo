@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuoRemote · 文件传输</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  /* ===== top: read-only transfer overview ===== */
+  .file-stage { position: absolute; inset: 0; background: #06080B; overflow: hidden; }
+  .file-stage .wallpaper { position: absolute; inset: 0; opacity: .55; }
+  .file-stage .desktop-window { position: absolute; left: 54px; top: 42px; width: 360px; height: 238px; opacity: .72; }
+  .file-stage .file-preview {
+    position: absolute; right: 46px; top: 46px; width: 360px;
+    border-radius: 16px; border: 1px solid rgba(108,203,255,.22);
+    background: linear-gradient(160deg, rgba(17,25,36,.94), rgba(8,12,17,.96));
+    box-shadow: 0 24px 70px rgba(0,0,0,.55); padding: 16px;
+  }
+  .file-preview .fp-head { display: flex; align-items: center; gap: 8px; }
+  .file-preview .fp-title { font-size: 15px; font-weight: 650; }
+  .file-preview .fp-sub { color: var(--text-tertiary); font-size: 9px; margin-top: 2px; }
+  .file-preview .fp-hero {
+    display: flex; align-items: center; gap: 12px; margin-top: 14px;
+    padding: 12px; border-radius: 12px; border: 1px solid var(--outline);
+    background: rgba(255,255,255,.03);
+  }
+  .file-preview .fp-hero .ico {
+    width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    background: var(--accent-soft); color: var(--accent); flex: none;
+  }
+  .file-preview .fp-hero .nm { font-size: 13px; font-weight: 600; }
+  .file-preview .fp-hero .meta { font-size: 9px; color: var(--text-tertiary); margin-top: 3px; }
+  .file-preview .fp-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 12px; }
+  .file-preview .fp-bar i { display: block; height: 100%; width: 62%; background: linear-gradient(90deg, var(--accent-strong), var(--accent)); }
+  .file-preview .fp-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: 12px; }
+  .file-preview .fp-rows .k { font-size: 8px; color: var(--text-tertiary); letter-spacing: .06em; text-transform: uppercase; }
+  .file-preview .fp-rows .v { font: 500 10px var(--mono); color: var(--text-secondary); margin-top: 1px; }
+  .file-preview .fp-note { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--outline); color: var(--text-tertiary); font-size: 9px; line-height: 1.5; }
+  .file-stage .top-note { position: absolute; left: 54px; top: 14px; }
+
+  /* ===== bottom: one control surface ===== */
+  .fb-path { display: flex; align-items: center; gap: 6px; flex: none; padding: 0 2px; }
+  .fb-path .crumb { font-size: 10px; }
+  .fb-quick { display: flex; align-items: center; gap: 5px; flex: none; }
+  .fb-quick button {
+    height: 24px; padding: 0 8px; border-radius: 7px; border: 1px solid var(--outline);
+    background: var(--surface-1); color: var(--text-secondary); font: 500 9px var(--font);
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .fb-quick button.on { color: var(--accent); border-color: rgba(108,203,255,.3); background: var(--accent-soft); }
+  .fb-list { border: 1px solid var(--outline); border-radius: var(--radius-md); background: var(--surface-1); overflow: hidden; }
+  .fb-row {
+    height: 31px; padding: 0 9px; display: grid; grid-template-columns: 20px 1fr 64px 74px;
+    align-items: center; gap: 7px; font-size: 10px; color: var(--text-secondary);
+  }
+  .fb-row + .fb-row { border-top: 1px solid rgba(46,55,66,.4); }
+  .fb-row.head { height: 24px; color: var(--text-tertiary); font-size: 8px; letter-spacing: .06em; text-transform: uppercase; background: rgba(255,255,255,.02); }
+  .fb-row.sel { background: var(--accent-soft); color: var(--text-primary); }
+  .fb-row .check {
+    width: 13px; height: 13px; border-radius: 4px; border: 1px solid var(--outline-strong);
+    display: flex; align-items: center; justify-content: center; color: var(--on-accent);
+  }
+  .fb-row.sel .check { background: var(--accent); border-color: var(--accent); }
+  .fb-row .nm { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .fb-row .nm span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .fb-row .sz, .fb-row .dt { font: 500 9px var(--mono); color: var(--text-tertiary); }
+  .fb-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+  .fb-actions .grow { flex: 1; }
+  .fb-actions .cc-btn { height: 30px; font-size: 10px; }
+  .fb-actions .cc-btn.primary { flex: 1.25; justify-content: center; }
+  .fb-sum { display: flex; align-items: center; gap: 6px; color: var(--text-tertiary); font-size: 9px; flex: none; }
+  .fb-sum .grow { flex: 1; }
+  .fb-panel { display: flex; flex-direction: column; gap: 8px; min-height: 0; flex: 1; }
+  .fb-queue { display: flex; flex-direction: column; gap: 7px; }
+  .fb-queue .queue-item { padding: 8px 10px; }
+  .fb-queue .queue-top { margin-bottom: 5px; }
+  .fb-queue .queue-actions { margin-top: 5px; }
+  .fb-note { color: var(--text-tertiary); font-size: 9px; line-height: 1.45; }
+  .fb-store { display: flex; flex-direction: column; gap: 7px; }
+  .fb-store .row-line { display: flex; align-items: center; min-height: 26px; border-bottom: 1px solid rgba(46,55,66,.4); font-size: 10px; }
+  .fb-store .row-line .k { color: var(--text-tertiary); }
+  .fb-store .row-line .v { margin-left: auto; font: 500 9px var(--mono); color: var(--text-secondary); }
+</style>
+<script src="sprite.js" defer></script>
+<script src="mockup.js" defer></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // 文件行：B 打开文件夹 / 选择文件；行上的选择状态与 check 同步。
+    document.querySelectorAll('.fb-row[data-kind]').forEach((row) => {
+      row.addEventListener('click', () => {
+        if (row.dataset.kind === 'folder') {
+          const crumb = document.querySelector('[data-file-crumb]');
+          if (crumb) crumb.textContent = row.dataset.name;
+          return;
+        }
+        row.classList.toggle('sel');
+      });
+    });
+  });
+</script>
+</head>
+<body data-gp-back="duo-home.html" data-gp-x="上传文件" data-gp-y="下载选中 (2)">
+<header class="page-head">
+  <div>
+    <h1>文件传输 · 单一操作台</h1>
+    <p>上屏只显示传输总览与预览，不再放按钮；下屏是唯一操作面，浏览、选择、下载、队列、存储都在同一棵焦点树里。</p>
+  </div>
+  <div class="meta">
+    <span class="pill accent">Files</span>
+    <span class="pill">电脑 ↔ 本机</span>
+    <span class="pill">断点续传</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="label">预览</span>
+  <button data-theme-toggle>亮色</button>
+  <button data-zoom="0.75">75%</button>
+  <button data-zoom="1" class="active">100%</button>
+  <button data-zoom="1.25">125%</button>
+  <span class="label" style="margin-left:auto">入口：主页动作条 / 串流控制中心 → 更多</span>
+  <a href="single-files.html" style="margin-left:10px">单屏版 →</a>
+</div>
+
+<main class="duo">
+  <!-- ===================== TOP: status only ===================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">上屏 · 832×468dp · 传输总览（只读）</div>
+    <section class="screen-top">
+      <div class="file-stage">
+        <div class="wallpaper"></div>
+        <div class="desktop-window">
+          <div class="win-bar"><span class="win-dot"></span><span class="win-dot"></span><span class="win-dot"></span><span class="win-title">客厅台式机 — 文件资源管理器</span></div>
+          <div class="win-body">
+            <div class="win-line w36"></div><div class="win-line w80"></div><div class="win-line w60"></div>
+            <div class="win-grid"><div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div><div class="win-tile"></div></div>
+          </div>
+        </div>
+
+        <div class="top-note"><svg class="icon sm"><use href="#i-monitor"/></svg>上屏只读 · 操作全部在下屏</div>
+
+        <div class="file-preview">
+          <div class="fp-head">
+            <div class="grow">
+              <div class="fp-title">文件传输</div>
+              <div class="fp-sub">主页 › 文件传输 · 客厅台式机 · 已连接</div>
+            </div>
+            <span class="chip online" style="height:20px;font-size:8px"><span class="status-dot online" style="width:5px;height:5px;box-shadow:none"></span>在线</span>
+          </div>
+
+          <div class="fp-hero">
+            <div class="ico"><svg class="icon"><use href="#i-folder"/></svg></div>
+            <div class="grow">
+              <div class="nm">设计稿/</div>
+              <div class="meta">3 个文件 · 1.2 GB · 正在下载到本机</div>
+            </div>
+            <span class="chip accent" style="height:20px;font-size:8px">62%</span>
+          </div>
+          <div class="fp-bar"><i></i></div>
+
+          <div class="fp-rows">
+            <div><div class="k">方向</div><div class="v">电脑 → 本机</div></div>
+            <div><div class="k">速度</div><div class="v">18.4 MB/s</div></div>
+            <div><div class="k">剩余</div><div class="v">00:42</div></div>
+            <div><div class="k">任务</div><div class="v">2 进行 · 1 完成</div></div>
+          </div>
+
+          <div class="fp-note">上屏只呈现“选中了什么、传到哪里、还剩多久”。选择与操作请在下屏完成，避免手柄在上下屏之间来回跳。</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="hinge">DUO</div>
+
+  <!-- ===================== BOTTOM: the only control surface ===================== -->
+  <div class="screen-wrap">
+    <div class="screen-label">下屏 · 640×480dp · 文件操作台</div>
+    <section class="screen-bottom">
+      <div class="bottom-content">
+        <div class="bottom-head">
+          <div class="grow">
+            <div class="title">文件传输</div>
+            <div class="sub"><span class="crumb"><a href="duo-home.html">主页</a><span class="sep">›</span><b>文件传输</b></span> · 客厅台式机 · 2 个任务</div>
+          </div>
+          <span class="chip accent" style="height:22px;font-size:9px">下载到本机</span>
+          <button class="icon-btn" title="返回主页" data-gp-back="duo-home.html"><svg class="icon"><use href="#i-x"/></svg></button>
+        </div>
+
+        <div class="tabs" data-tab-group>
+          <button class="tab active" data-tab="fb-browse">浏览</button>
+          <button class="tab" data-tab="fb-queue">队列</button>
+          <button class="tab" data-tab="fb-store">本机存储</button>
+          <button class="tab" data-sysime title="搜索文件（唤起输入法）" style="margin-left:auto"><svg class="icon sm"><use href="#i-search"/></svg>搜索</button>
+        </div>
+
+        <div class="tool-frame" style="padding-top:8px;gap:7px">
+          <!-- ===== browse ===== -->
+          <div class="tool-panel fb-panel" data-panel="fb-browse">
+            <div class="fb-path">
+              <button class="icon-btn" title="上一级" style="width:24px;height:24px"><svg class="icon sm"><use href="#i-back"/></svg></button>
+              <span class="crumb"><span>此电脑</span><span class="sep">›</span><b data-file-crumb>文档</b></span>
+              <div class="grow"></div>
+              <span class="fb-sum">已选 2 项 · 1.2 GB</span>
+            </div>
+
+            <div class="fb-quick">
+              <button><svg class="icon sm"><use href="#i-clock"/></svg>最近</button>
+              <button class="on"><svg class="icon sm"><use href="#i-folder"/></svg>文档</button>
+              <button><svg class="icon sm"><use href="#i-download"/></svg>下载</button>
+              <button><svg class="icon sm"><use href="#i-monitor"/></svg>系统盘</button>
+              <button><svg class="icon sm"><use href="#i-monitor"/></svg>数据盘</button>
+            </div>
+
+            <div class="fb-list">
+              <div class="fb-row head"><span></span><span>名称</span><span>大小</span><span>修改时间</span></div>
+              <div class="fb-row" data-kind="folder" data-name="项目资料" data-gp-initial tabindex="0">
+                <span class="check"></span>
+                <div class="nm"><svg class="icon sm" style="color:var(--accent)"><use href="#i-folder"/></svg><span>项目资料</span></div>
+                <span class="sz">—</span><span class="dt">11-18 14:02</span>
+              </div>
+              <div class="fb-row sel" data-kind="folder" data-name="设计稿">
+                <span class="check"><svg class="icon sm" style="width:9px;height:9px"><use href="#i-check"/></svg></span>
+                <div class="nm"><svg class="icon sm" style="color:var(--accent)"><use href="#i-folder"/></svg><span>设计稿</span></div>
+                <span class="sz">—</span><span class="dt">11-18 13:40</span>
+              </div>
+              <div class="fb-row" data-kind="folder" data-name="会议记录">
+                <span class="check"></span>
+                <div class="nm"><svg class="icon sm" style="color:var(--accent)"><use href="#i-folder"/></svg><span>会议记录</span></div>
+                <span class="sz">—</span><span class="dt">11-17 18:22</span>
+              </div>
+              <div class="fb-row sel" data-kind="file" data-name="预算.xlsx">
+                <span class="check"><svg class="icon sm" style="width:9px;height:9px"><use href="#i-check"/></svg></span>
+                <div class="nm"><svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-file"/></svg><span>预算.xlsx</span></div>
+                <span class="sz">2.4 MB</span><span class="dt">11-18 11:05</span>
+              </div>
+              <div class="fb-row" data-kind="file" data-name="演示.pptx">
+                <span class="check"></span>
+                <div class="nm"><svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-file"/></svg><span>演示.pptx</span></div>
+                <span class="sz">18.6 MB</span><span class="dt">11-18 09:31</span>
+              </div>
+              <div class="fb-row" data-kind="file" data-name="说明.pdf">
+                <span class="check"></span>
+                <div class="nm"><svg class="icon sm" style="color:var(--text-tertiary)"><use href="#i-file"/></svg><span>说明.pdf</span></div>
+                <span class="sz">6.1 MB</span><span class="dt">11-16 16:48</span>
+              </div>
+            </div>
+
+            <div class="fb-actions">
+              <button class="cc-btn"><svg class="icon sm"><use href="#i-plus"/></svg>新建文件夹</button>
+              <button class="cc-btn"><svg class="icon sm"><use href="#i-upload"/></svg>上传</button>
+              <div class="grow"></div>
+              <button class="cc-btn primary"><svg class="icon sm"><use href="#i-download"/></svg>下载选中 (2)</button>
+            </div>
+            <div class="fb-note">B 打开文件夹 / 选择文件 · X 上传 · Y 下载选中 · 被控端同时只能一个传输任务</div>
+          </div>
+
+          <!-- ===== queue ===== -->
+          <div class="tool-panel fb-panel" data-panel="fb-queue" hidden>
+            <div class="fb-queue">
+              <div class="queue-item">
+                <div class="queue-top"><svg class="icon sm" style="color:var(--accent)"><use href="#i-download"/></svg><span class="queue-name">设计稿/</span><span class="queue-meta">62% · 18.4 MB/s</span></div>
+                <div class="progress"><i style="width:62%"></i></div>
+                <div class="queue-actions"><button class="mini-btn"><svg class="icon sm"><use href="#i-pause"/></svg>暂停</button><button class="mini-btn">取消</button><span class="queue-meta" style="margin-left:auto">剩余 00:42</span></div>
+              </div>
+              <div class="queue-item">
+                <div class="queue-top"><svg class="icon sm" style="color:var(--accent)"><use href="#i-file"/></svg><span class="queue-name">预算.xlsx</span><span class="queue-meta">34% · 8.2 MB/s</span></div>
+                <div class="progress"><i style="width:34%"></i></div>
+                <div class="queue-actions"><button class="mini-btn"><svg class="icon sm"><use href="#i-pause"/></svg>暂停</button><button class="mini-btn">取消</button><span class="queue-meta" style="margin-left:auto">剩余 00:18</span></div>
+              </div>
+              <div class="queue-item">
+                <div class="queue-top"><svg class="icon sm" style="color:var(--online)"><use href="#i-check"/></svg><span class="queue-name">演示.pptx</span><span class="queue-meta">已完成 · 18.6 MB</span></div>
+                <div class="progress"><i class="ok" style="width:100%"></i></div>
+                <div class="queue-actions"><button class="mini-btn"><svg class="icon sm"><use href="#i-folder"/></svg>打开所在目录</button><span class="queue-meta" style="margin-left:auto">11-18 14:26</span></div>
+              </div>
+            </div>
+            <div class="fb-note" style="margin-top:auto">下载中的任务在断线后保留进度；重新连接后从断点继续。上传任务走同一队列。</div>
+          </div>
+
+          <!-- ===== storage ===== -->
+          <div class="tool-panel fb-panel" data-panel="fb-store" hidden>
+            <div class="fb-store">
+              <div class="row-line"><span class="k">本机保存路径</span><span class="v">/sdcard/UU/Download</span></div>
+              <div class="row-line"><span class="k">可用空间</span><span class="v">42.1 GB / 128 GB</span></div>
+              <div class="row-line"><span class="k">传输缓存</span><span class="v">1.8 GB</span></div>
+              <div class="row-line"><span class="k">同时任务</span><span class="v">1 个（被控端限制）</span></div>
+              <div class="row-line"><span class="k">默认方向</span><span class="v">电脑 → 本机</span></div>
+            </div>
+            <div class="fb-actions" style="margin-top:auto">
+              <button class="cc-btn">更改保存路径</button>
+              <button class="cc-btn danger">清理缓存</button>
+              <div class="grow"></div>
+              <a class="cc-btn" href="duo-settings.html?tab=security" style="text-decoration:none">传到设置 →</a>
+            </div>
+            <div class="fb-note">保存路径与缓存策略在设置 → 安全 → 文件传输中维护；本页只做当前会话的快捷操作。</div>
+          </div>
+        </div>
+
+        <div class="bottom-foot">
+          <div class="keys"><span><kbd>B</kbd> 打开/选择</span><span><kbd>A</kbd> 返回</span><span><kbd>X</kbd> 上传</span><span><kbd>Y</kbd> 下载选中</span><span><kbd>L1</kbd>/<kbd>R1</kbd> 页签</span></div>
+          <span>上屏只读 · 焦点始终在下屏</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<aside class="note-box" style="width:min(1180px,100%);margin-top:8px">
+  设计说明：这是对官方“上屏浏览 + 下屏队列”的 Duo 化改造。官方移动端只有一块屏，文件浏览和传输队列在同一页；
+  双屏如果照搬成两套控件，手柄就必须来回切屏。这里把<b>所有动作</b>收进下屏一个操作台，上屏只保留“选中了什么、传到哪里、还剩多久”的状态，
+  与串流页“上屏画面 + 下屏工具箱”的输入契约一致。单屏版见 <a href="single-files.html">single-files.html</a>。
+</aside>
+</body>
+</html>
