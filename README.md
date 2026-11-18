@@ -118,7 +118,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 存储 | DataStore Preferences；EncryptedSharedPreferences / Android Keystore 保存敏感材料 |
 | 二维码 | ZXing core `3.5.3` |
 | 测试 | JUnit 4，MockWebServer；66 个 JVM 单测 |
-| CI | 可选 GitHub Actions 样例：[docs/ci/android-workflow.yml](docs/ci/android-workflow.yml)；当前未启用 |
+| CI | GitHub Actions：单测 + debug APK artifact；**不创建 Release** |
 
 ## 架构
 
@@ -183,8 +183,8 @@ uuremote-duo/
 │   ├── feature-matrix.md             # 功能矩阵与边界
 │   ├── feature-parity.md             # 官方/第三方对照
 │   ├── v1-checklist.md               # 验收清单
-│   ├── ci/android-workflow.yml       # 可选 CI 样例（当前未启用）
 │   └── ui/                           # HTML 设计稿、图标、规范
+├── .github/workflows/android.yml     # 单测 + debug 构建
 ├── LICENSE                           # GPL-3.0
 └── README.md
 ```
@@ -219,9 +219,8 @@ app/build/outputs/apk/debug/app-debug.apk
 
 ### CI
 
-仓库当前未启用 GitHub Actions。可选工作流样例在
-[docs/ci/android-workflow.yml](docs/ci/android-workflow.yml)，内容为单测 + debug APK artifact；
-启用时复制到 `.github/workflows/android.yml`，并使用具备 `workflow` scope 的凭据推送。
+GitHub Actions 在 `push` / `pull_request` 时运行 `:app:testDebugUnitTest` 与 `:app:assembleDebug`，
+并上传 debug APK artifact；**不创建 Release**。
 
 ### 签名材料
 
