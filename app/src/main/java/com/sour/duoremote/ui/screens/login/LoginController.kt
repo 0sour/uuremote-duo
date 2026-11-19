@@ -3,6 +3,7 @@ package com.sour.duoremote.ui.screens.login
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.sour.duoremote.protocol.api.ErrorText
 import com.sour.duoremote.protocol.api.UuApiClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -151,7 +152,7 @@ class LoginController(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                qrError = e.message ?: "获取二维码失败"
+                qrError = ErrorText.friendly(e, "获取二维码失败")
                 expired = true
             } finally {
                 qrLoading = false
@@ -194,7 +195,7 @@ class LoginController(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    qrError = e.message ?: "扫码状态获取失败"
+                    qrError = ErrorText.friendly(e, "扫码状态获取失败")
                     expired = true
                     break
                 }
@@ -218,7 +219,7 @@ class LoginController(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                smsError = e.message ?: "验证码发送失败"
+                smsError = ErrorText.friendly(e, "验证码发送失败")
             } finally {
                 smsSending = false
             }
@@ -241,7 +242,7 @@ class LoginController(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                smsError = e.message ?: "登录失败"
+                smsError = ErrorText.friendly(e, "登录失败")
             } finally {
                 smsLogging = false
             }

@@ -701,6 +701,8 @@ fun StatsPanel(
             ) {
                 StatLine("画面", if (stats.width > 0) "${stats.width}×${stats.height}" else "—")
                 StatLine("编码 / 解码", stats.codec?.removePrefix("video/")?.let { "$it · MediaCodec" } ?: "H.264 · MediaCodec")
+                StatLine("首帧", if (stats.firstFrameMs >= 0L) "${stats.firstFrameMs} ms" else "等待画面")
+                StatLine("丢帧", stats.droppedFrames.toString())
                 StatLine("会话", formatElapsed(stats.elapsedSeconds))
             }
         } else {

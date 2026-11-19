@@ -52,7 +52,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 版本 | `0.3.0`（development，versionCode 3） |
 | 主要验证设备 | Retroid Pocket Duo（双屏 1920×1080 + 1280×960，Android 掌机） |
 | 单屏模式 | 上屏 Activity / 下屏 Presentation 均可作为唯一屏 |
-| 自动测试 | 99 个 JVM 单测通过 |
+| 自动测试 | 102 个 JVM 单测通过 |
 | 构建 | debug / R8 release（默认未签名）通过；lint 通过 |
 | 发布 | **没有 GitHub Release，没有随仓库分发的 APK** |
 | 网络验收 | 1080p60 / 720p30、控制中心重连、仅观看、fit/fill 缩放、文件传输与文件夹上下传已真机验证 |
@@ -78,7 +78,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 画面缩放 | `fit` / `fill` / `original`；触屏坐标映射同步；本地即时生效，不重连 |
 | 输入 | 触摸板、直接触摸视频、内置拼音、系统 IME、快捷键、文字剪贴板（默认关） |
 | 文件传输 | 控制中心「更多」；远端目录浏览、单文件/多文件上传下载、文件夹（含子目录）上传与下载；本机文件用 app 内自建浏览页，应用目录免授权，另可一次性授权一个本机文件夹；重名自动改名 |
-| 诊断 | 可选 FPS / 码率 / RTT / 丢包统计；默认关闭 |
+| 诊断 | 可选 FPS / 码率 / RTT / 丢包 / 首帧 / 丢帧统计；默认关闭 |
 | 品牌 | A1 双屏手柄 adaptive icon；登录、上屏摘要、账号、关于使用同一双色短标 |
 
 ### 部分可用 / 未完整验收
@@ -120,7 +120,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 实时 | `io.github.webrtc-sdk:android:125.6422.07`（H.264 / Opus） |
 | 存储 | DataStore Preferences；EncryptedSharedPreferences / Android Keystore 保存敏感材料 |
 | 二维码 | ZXing core `3.5.3` |
-| 测试 | JUnit 4，MockWebServer；99 个 JVM 单测 |
+| 测试 | JUnit 4，MockWebServer；102 个 JVM 单测 |
 | CI | GitHub Actions：单测 + debug APK artifact；**不创建 Release** |
 
 ## 架构

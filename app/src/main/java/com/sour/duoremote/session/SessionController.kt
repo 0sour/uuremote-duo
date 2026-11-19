@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.sour.duoremote.protocol.api.ErrorText
 import com.sour.duoremote.protocol.api.UuApiClient
 import com.sour.duoremote.protocol.file.FileTransferCodec
 import com.sour.duoremote.protocol.file.FileInfo
@@ -66,6 +67,8 @@ data class StreamStats(
     val bitrateMbps: Double = 0.0,
     val rttMs: Double = 0.0,
     val packetsLost: Long = 0,
+    val droppedFrames: Long = 0,
+    val firstFrameMs: Long = -1L,
     val codec: String? = null,
     val elapsedSeconds: Long = 0,
 )
@@ -121,6 +124,7 @@ class SessionController(
     private val heldMouseButtons = LinkedHashSet<Int>()
     private var statsJob: Job? = null
     private var statsStartedAt = 0L
+    private var firstFrameMs = -1L
     private var lastBytes = 0L
     private var lastFrames = 0L
     private var lastStatsAt = 0L
@@ -1228,6 +1232,7 @@ class SessionController(
     private fun startStats() {
         if (statsJob?.isActive == true) return
         statsStartedAt = SystemClock.elapsedRealtime()
+        firstFrameMs = -1L
         synchronized(statsLock) {
             lastBytes = 0L
             lastFrames = 0L
@@ -1253,6 +1258,9 @@ class SessionController(
                         lastFrames = snapshot.framesDecoded
                         lastStatsAt = now
                     }
+                    if (firstFrameMs < 0L && snapshot.framesDecoded > 0L) {
+                        firstFrameMs = (now - statsStartedAt).coerceAtLeast(0L)
+                    }
                     val elapsedSeconds = (now - statsStartedAt).coerceAtLeast(0L) / 1000L
                     scope.launch(Dispatchers.Main.immediate) {
                         stats = StreamStats(
@@ -1262,6 +1270,8 @@ class SessionController(
                             bitrateMbps = bitrate,
                             rttMs = snapshot.rttMs,
                             packetsLost = snapshot.packetsLost,
+                            droppedFrames = snapshot.framesDropped,
+                            firstFrameMs = firstFrameMs,
                             codec = snapshot.codec,
                             elapsedSeconds = elapsedSeconds,
                         )
@@ -1326,7 +1336,7 @@ class SessionController(
                 if (!userClosing && lastDeviceId == deviceId) startConnect()
             }
         } else {
-            setState(SessionStage.FAILED, error.message ?: "连接失败")
+            setState(SessionStage.FAILED, ErrorText.friendly(error, "连接失败"))
         }
     }
 

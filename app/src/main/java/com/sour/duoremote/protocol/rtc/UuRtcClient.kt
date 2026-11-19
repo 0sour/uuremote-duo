@@ -118,6 +118,7 @@ class UuRtcClient(
                         bytesReceived = (members["bytesReceived"] as? Number)?.toLong() ?: 0L,
                         packetsLost = (members["packetsLost"] as? Number)?.toLong() ?: 0L,
                         framesDecoded = (members["framesDecoded"] as? Number)?.toLong() ?: 0L,
+                        framesDropped = (members["framesDropped"] as? Number)?.toLong() ?: 0L,
                         rttMs = ((pair?.members?.get("currentRoundTripTime") as? Number)?.toDouble()
                             ?: 0.0) * 1000.0,
                         codec = codec,
@@ -134,6 +135,7 @@ class UuRtcClient(
         val bytesReceived: Long,
         val packetsLost: Long,
         val framesDecoded: Long = 0L,
+        val framesDropped: Long = 0L,
         val rttMs: Double,
         val codec: String?,
     )

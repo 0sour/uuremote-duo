@@ -41,6 +41,7 @@ import androidx.lifecycle.lifecycleScope
 import com.sour.duoremote.data.DuoSettings
 import com.sour.duoremote.data.SecureStore
 import com.sour.duoremote.data.SettingsStore
+import com.sour.duoremote.protocol.api.ErrorText
 import com.sour.duoremote.protocol.api.UuApiClient
 import com.sour.duoremote.protocol.file.FileEntry
 import com.sour.duoremote.protocol.proto.ConnectOptions
@@ -1449,7 +1450,7 @@ class MainActivity : ComponentActivity() {
             val remote = withContext(Dispatchers.IO) { client.getDevices() }
             devices = remote.map { it.toUi() }
         } catch (e: Exception) {
-            deviceError = e.message ?: "设备列表获取失败"
+            deviceError = ErrorText.friendly(e, "设备列表获取失败")
         } finally {
             devicesLoading = false
         }
