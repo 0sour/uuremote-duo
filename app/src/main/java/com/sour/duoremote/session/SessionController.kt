@@ -330,12 +330,12 @@ class SessionController(
         modifiedTime: Long,
         input: InputStream,
         remoteDir: String = fileState.path,
-    ) {
+    ): Boolean {
         if (viewOnly) {
             runCatching { input.close() }
-            return
+            return false
         }
-        fileTransfer.upload(name, size, modifiedTime, input, remoteDir)
+        return fileTransfer.upload(name, size, modifiedTime, input, remoteDir)
     }
 
     fun downloadFile(
@@ -343,12 +343,12 @@ class SessionController(
         name: String,
         size: Long,
         output: OutputStream,
-    ) {
+    ): Boolean {
         if (viewOnly) {
             runCatching { output.close() }
-            return
+            return false
         }
-        fileTransfer.download(remotePath, name, size, output)
+        return fileTransfer.download(remotePath, name, size, output)
     }
 
     fun cancelFileTransfer() {

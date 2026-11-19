@@ -59,8 +59,9 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Bottom-panel file browser. SAF pickers are owned by MainActivity so they also work when this
- * composable is hosted by the Presentation window; this screen only raises request flags.
+ * Bottom-panel remote file browser. Local selection is handled by [LocalPickerScreen] so the
+ * transfer path never starts the system DocumentsUI; this screen only raises upload/download
+ * intents to MainActivity.
  */
 @Composable
 fun FilesScreen(
@@ -69,6 +70,8 @@ fun FilesScreen(
     onList: (String) -> Unit,
     onCancel: () -> Unit,
     onClose: () -> Unit,
+    onUpload: () -> Unit,
+    onDownload: (FileEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalDuoColors.current
@@ -139,13 +142,13 @@ fun FilesScreen(
                             when (index) {
                                 0 -> parent?.let(::open)
                                 1 -> onList(state.path)
-                                2 -> ui.requestUpload = true
+                                2 -> onUpload()
                                 3 -> if (selected == null) {
                                     ui.error = "请选择一个文件"
                                 } else if (selected.isDirectory) {
                                     ui.error = "文件夹下载暂未支持"
                                 } else {
-                                    ui.requestDownload = true
+                                    onDownload(selected)
                                 }
                             }
                         },

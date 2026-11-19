@@ -52,11 +52,11 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 版本 | `0.3.0`（development，versionCode 3） |
 | 主要验证设备 | Retroid Pocket Duo（双屏 1920×1080 + 1280×960，Android 掌机） |
 | 单屏模式 | 上屏 Activity / 下屏 Presentation 均可作为唯一屏 |
-| 自动测试 | 80 个 JVM 单测通过 |
+| 自动测试 | 85 个 JVM 单测通过 |
 | 构建 | debug / R8 release（默认未签名）通过；lint 通过 |
 | 发布 | **没有 GitHub Release，没有随仓库分发的 APK** |
-| 网络验收 | 1080p60 / 720p30、控制中心重连、仅观看、fit/fill 缩放已真机验证 |
-| 尚未复测 | 文件传输真机/电脑端、断网自动重连、剪贴板双向、手柄震动、双屏热插拔、码率逐档 |
+| 网络验收 | 1080p60 / 720p30、控制中心重连、仅观看、fit/fill 缩放、文件传输已真机验证 |
+| 尚未复测 | 断网自动重连、剪贴板双向、手柄震动、双屏热插拔、码率逐档 |
 
 ## 功能与边界
 
@@ -76,6 +76,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 观看模式 | 仅观看：客户端侧释放并拦截手柄/键鼠/触摸/文字，暂停剪贴板；非被控端强制 |
 | 画面缩放 | `fit` / `fill` / `original`；触屏坐标映射同步；本地即时生效，不重连 |
 | 输入 | 触摸板、直接触摸视频、内置拼音、系统 IME、快捷键、文字剪贴板（默认关） |
+| 文件传输 | 控制中心「更多」；远端目录浏览、单文件上传/下载；本机文件用 app 内自建浏览页，应用目录免授权，另可一次性授权一个本机文件夹；重名自动改名 |
 | 诊断 | 可选 FPS / 码率 / RTT / 丢包统计；默认关闭 |
 | 品牌 | A1 双屏手柄 adaptive icon；登录、上屏摘要、账号、关于使用同一双色短标 |
 
@@ -89,7 +90,6 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | SendToRom 兜底 | `text_input` 失败回退 TEXT 通道，未做真机故障注入 |
 | 双屏热插拔 | Presentation 随 display 增减重建，未做完整拔插压力测试 |
 | 码率逐档 | 自动 / 20 / 50 / 100 Mbps 选项存在，未逐档长期观察 |
-| 文件传输 MVP | 控制中心「更多」入口；远端目录浏览、SAF 单文件上传/下载、仅观看禁用、超时/取消；**未在 RP Duo + Windows 电脑端验收**；无文件夹/拖放/下载续传 |
 
 ### 明确不做（v1 边界）
 
@@ -118,7 +118,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 实时 | `io.github.webrtc-sdk:android:125.6422.07`（H.264 / Opus） |
 | 存储 | DataStore Preferences；EncryptedSharedPreferences / Android Keystore 保存敏感材料 |
 | 二维码 | ZXing core `3.5.3` |
-| 测试 | JUnit 4，MockWebServer；80 个 JVM 单测 |
+| 测试 | JUnit 4，MockWebServer；85 个 JVM 单测 |
 | CI | GitHub Actions：单测 + debug APK artifact；**不创建 Release** |
 
 ## 架构
@@ -256,7 +256,7 @@ GitHub Actions 在 `push` / `pull_request` 时运行 `:app:testDebugUnitTest` �
 
 | 阶段 | 内容 |
 | --- | --- |
-| 当前 | 文件传输 MVP：远端目录浏览、单文件上传/下载；待真机/电脑端验收 |
+| 当前 | 文件传输 MVP：远端目录浏览、单文件上传/下载；应用内本机浏览 + 一次性文件夹授权已真机验收 |
 | 下一步 | 文件夹批量/拖放；多显示器/超级屏（依赖电脑端能力） |
 | 后续 | HDR/4K/H.265、远开/关机、终端/端口映射 |
 | P2 | 实体手柄→键鼠映射模板（不做虚拟按键/宏/轮盘） |

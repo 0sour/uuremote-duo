@@ -45,6 +45,8 @@ data class DuoSettings(
     val theme: String = "dark",
     val focusRingStyle: String = "white",
     val diagnostics: Boolean = false,
+    /** Persisted SAF tree URI for the optional, one-time local folder grant. */
+    val localTreeUri: String = "",
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "duo_settings")
@@ -83,6 +85,7 @@ class SettingsStore(private val context: Context) {
                 theme = prefs[KEY_THEME] ?: "dark",
                 focusRingStyle = prefs[KEY_FOCUS_RING] ?: "white",
                 diagnostics = prefs[KEY_DIAGNOSTICS] ?: false,
+                localTreeUri = prefs[KEY_LOCAL_TREE_URI].orEmpty(),
             )
         }
 
@@ -114,6 +117,7 @@ class SettingsStore(private val context: Context) {
             prefs[KEY_THEME] = settings.theme
             prefs[KEY_FOCUS_RING] = settings.focusRingStyle
             prefs[KEY_DIAGNOSTICS] = settings.diagnostics
+            prefs[KEY_LOCAL_TREE_URI] = settings.localTreeUri
         }
     }
 
@@ -188,5 +192,6 @@ class SettingsStore(private val context: Context) {
         val KEY_THEME = stringPreferencesKey("theme")
         val KEY_FOCUS_RING = stringPreferencesKey("focus_ring")
         val KEY_DIAGNOSTICS = booleanPreferencesKey("diagnostics")
+        val KEY_LOCAL_TREE_URI = stringPreferencesKey("local_tree_uri")
     }
 }

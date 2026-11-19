@@ -17,15 +17,11 @@ enum class FilesTab(val label: String) {
 class FilesUiState {
     var tab by mutableStateOf(FilesTab.BROWSE)
     var index by mutableStateOf(0)
-    var requestUpload by mutableStateOf(false)
-    var requestDownload by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
 
     fun reset() {
         tab = FilesTab.BROWSE
         index = 0
-        requestUpload = false
-        requestDownload = false
         error = null
     }
 
@@ -44,8 +40,6 @@ class FilesUiState {
     fun moveTab(delta: Int) {
         val values = FilesTab.entries
         tab = values[(tab.ordinal + delta + values.size) % values.size]
-        requestUpload = false
-        requestDownload = false
     }
 
     fun clamp(count: Int) {

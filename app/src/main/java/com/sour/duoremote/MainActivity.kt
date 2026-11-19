@@ -1,19 +1,18 @@
 package com.sour.duoremote
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.hardware.display.DisplayManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.provider.OpenableColumns
 import android.view.Display
 import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -27,11 +26,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -45,6 +44,7 @@ import com.sour.duoremote.protocol.proto.ConnectOptions
 import com.sour.duoremote.protocol.rtc.RtcRuntime
 import com.sour.duoremote.session.FileTransferState
 import com.sour.duoremote.session.SessionController
+import com.sour.duoremote.session.SessionKeepAliveService
 import com.sour.duoremote.ui.AppRoute
 import com.sour.duoremote.ui.components.GamepadHelpOverlay
 import com.sour.duoremote.ui.controlcenter.ControlCenterScreen
@@ -55,6 +55,14 @@ import com.sour.duoremote.ui.files.FilesScreen
 import com.sour.duoremote.ui.files.FilesTab
 import com.sour.duoremote.ui.files.FilesTopPreview
 import com.sour.duoremote.ui.files.FilesUiState
+import com.sour.duoremote.ui.files.LocalEntry
+import com.sour.duoremote.ui.files.LocalFileAccess
+import com.sour.duoremote.ui.files.LocalFilesUiState
+import com.sour.duoremote.ui.files.LocalLocation
+import com.sour.duoremote.ui.files.LocalPickerMode
+import com.sour.duoremote.ui.files.LocalPickerScreen
+import com.sour.duoremote.ui.files.LocalRootKind
+import com.sour.duoremote.ui.files.PendingDownload
 import com.sour.duoremote.ui.home.BlackHost
 import com.sour.duoremote.ui.home.DemoDevice
 import com.sour.duoremote.ui.home.DualBottomScreen
@@ -112,8 +120,13 @@ class MainActivity : ComponentActivity() {
     private val settingsUi = SettingsUiState()
     private val controlCenter = ControlCenterState()
     private val filesUi = FilesUiState()
+    private val localFilesUi = LocalFilesUiState()
     private val selectedId = mutableStateOf("")
     private var duoSettings by mutableStateOf(DuoSettings())
+
+    private val folderGrantLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocumentTree(),
+    ) { uri -> onFolderGrantResult(uri) }
 
     private lateinit var secure: SecureStore
     private lateinit var settingsStore: SettingsStore
@@ -206,88 +219,6 @@ class MainActivity : ComponentActivity() {
                     else -> Stage.HOME
                 }
                 val layout = host.layout
-                val pendingDownload = remember { mutableStateOf<FileEntry?>(null) }
-                val uploadLauncher = rememberLauncherForActivityResult(
-                    ActivityResultContracts.OpenDocument(),
-                ) { uri ->
-                    if (uri == null) return@rememberLauncherForActivityResult
-                    val meta = queryUpload(uri)
-                    if (meta == null) {
-                        filesUi.error = "无法读取文件信息"
-                        return@rememberLauncherForActivityResult
-                    }
-                    val input = runCatching { contentResolver.openInputStream(uri) }.getOrNull()
-                    if (input == null) {
-                        filesUi.error = "无法打开所选文件"
-                        return@rememberLauncherForActivityResult
-                    }
-                    val client = sessionController
-                    if (client == null) {
-                        runCatching { input.close() }
-                        filesUi.error = "会话未连接"
-                        return@rememberLauncherForActivityResult
-                    }
-                    filesUi.error = null
-                    filesUi.tab = FilesTab.QUEUE
-                    client.uploadFile(meta.first, meta.second, 0L, input)
-                }
-                val downloadLauncher = rememberLauncherForActivityResult(
-                    ActivityResultContracts.CreateDocument("application/octet-stream"),
-                ) { uri ->
-                    val entry = pendingDownload.value
-                    pendingDownload.value = null
-                    if (uri == null || entry == null) return@rememberLauncherForActivityResult
-                    val output = runCatching { contentResolver.openOutputStream(uri) }.getOrNull()
-                    if (output == null) {
-                        filesUi.error = "无法写入所选位置"
-                        return@rememberLauncherForActivityResult
-                    }
-                    val client = sessionController
-                    if (client == null) {
-                        runCatching { output.close() }
-                        filesUi.error = "会话未连接"
-                        return@rememberLauncherForActivityResult
-                    }
-                    val remotePath = entry.fullPath.ifBlank {
-                        FileTransferState.childOf(client.fileState.path, entry.name)
-                    }
-                    filesUi.error = null
-                    filesUi.tab = FilesTab.QUEUE
-                    client.downloadFile(remotePath, entry.name, entry.size, output)
-                }
-
-                LaunchedEffect(filesUi.requestUpload) {
-                    if (filesUi.requestUpload) {
-                        filesUi.requestUpload = false
-                        filesUi.error = null
-                        runCatching { uploadLauncher.launch(arrayOf("*/*")) }
-                            .onFailure { filesUi.error = "无法打开文件选择器" }
-                    }
-                }
-
-                LaunchedEffect(filesUi.requestDownload) {
-                    if (!filesUi.requestDownload) return@LaunchedEffect
-                    filesUi.requestDownload = false
-                    val client = sessionController
-                    if (client == null) {
-                        filesUi.error = "会话未连接"
-                        return@LaunchedEffect
-                    }
-                    val entry = client.fileState.entries.getOrNull(filesUi.index)
-                    when {
-                        entry == null -> filesUi.error = "请选择一个文件"
-                        entry.isDirectory -> filesUi.error = "文件夹下载暂未支持"
-                        else -> {
-                            pendingDownload.value = entry
-                            filesUi.error = null
-                            runCatching { downloadLauncher.launch(entry.name) }
-                                .onFailure {
-                                    pendingDownload.value = null
-                                    filesUi.error = "无法打开保存位置选择器"
-                                }
-                        }
-                    }
-                }
 
                 val fileEntriesSize = sessionController?.fileState?.entries?.size ?: 0
                 LaunchedEffect(fileEntriesSize) {
@@ -375,6 +306,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         route = AppRoute.Home
                         filesReturnRoute = AppRoute.Home
+                        localFilesUi.close()
                         streamingUi.localMenu = false
                     }
                 }
@@ -382,6 +314,7 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(duoSettings.viewOnly) {
                     if (duoSettings.viewOnly) {
                         sessionController?.cancelFileTransfer()
+                        localFilesUi.close()
                         if (route == AppRoute.Files) closeFiles()
                     }
                 }
@@ -522,17 +455,8 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxSize(),
                         )
 
-                        video != null && client != null && layout == HostLayout.SINGLE_TOP -> FilesScreen(
-                            state = client.fileState,
-                            ui = filesUi,
-                            onList = { path ->
-                                client.listFiles(path)
-                                filesUi.select(0)
-                            },
-                            onCancel = { client.cancelFileTransfer() },
-                            onClose = ::closeFiles,
-                            modifier = Modifier.fillMaxSize(),
-                        )
+                        video != null && client != null && layout == HostLayout.SINGLE_TOP ->
+                            FilesRouteContent(client, Modifier.fillMaxSize())
 
                         else -> BlackHost(modifier = Modifier.fillMaxSize())
                     }
@@ -608,6 +532,43 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * The remote file page and the in-app local picker share one host slot. Keeping this in one
+     * function ensures the Activity and the bottom Presentation render the same local state.
+     */
+    @Composable
+    private fun FilesRouteContent(client: SessionController, modifier: Modifier = Modifier) {
+        if (localFilesUi.visible) {
+            LocalPickerScreen(
+                state = localFilesUi,
+                onBack = ::localBack,
+                onSelectRoot = ::selectLocalRoot,
+                onGrantFolder = ::grantLocalFolder,
+                onRevokeFolder = ::revokeLocalFolder,
+                onOpen = ::openLocalEntry,
+                onUp = ::localBack,
+                onRefresh = ::refreshLocal,
+                onSelect = localFilesUi::select,
+                onConfirm = ::confirmLocalPicker,
+                modifier = modifier,
+            )
+        } else {
+            FilesScreen(
+                state = client.fileState,
+                ui = filesUi,
+                onList = { path ->
+                    client.listFiles(path)
+                    filesUi.select(0)
+                },
+                onCancel = { client.cancelFileTransfer() },
+                onClose = ::closeFiles,
+                onUpload = ::openLocalUpload,
+                onDownload = ::openLocalDownload,
+                modifier = modifier,
+            )
+        }
+    }
+
     @Composable
     private fun PresentationContent(stage: Stage, layout: HostLayout) {
         val video = sessionController?.videoTrack
@@ -678,17 +639,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 AppRoute.Files -> if (video != null && client != null) {
-                    FilesScreen(
-                        state = client.fileState,
-                        ui = filesUi,
-                        onList = { path ->
-                            client.listFiles(path)
-                            filesUi.select(0)
-                        },
-                        onCancel = { client.cancelFileTransfer() },
-                        onClose = ::closeFiles,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                    FilesRouteContent(client, Modifier.fillMaxSize())
                 } else {
                     BlackHost(modifier = Modifier.fillMaxSize())
                 }
@@ -768,35 +719,306 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun queryUpload(uri: Uri): Pair<String, Long>? {
-        var name: String? = null
-        var size = -1L
+    private fun setPickerKeepAlive(enabled: Boolean) {
+        val intent = Intent(this, SessionKeepAliveService::class.java)
         runCatching {
-            contentResolver.query(
-                uri,
-                arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE),
-                null,
-                null,
-                null,
-            )?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                    if (nameIndex >= 0) name = cursor.getString(nameIndex)
-                    if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) size = cursor.getLong(sizeIndex)
+            if (enabled) {
+                ContextCompat.startForegroundService(this, intent)
+            } else {
+                stopService(intent)
+            }
+        }
+    }
+
+    private fun onFolderGrantResult(uri: Uri?) {
+        setPickerKeepAlive(false)
+        if (uri == null) {
+            if (localFilesUi.visible && localFilesUi.authPrompt) {
+                localFilesUi.showAuthPrompt("未授权文件夹，仍可使用应用目录")
+            }
+            return
+        }
+        val readWrite = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+            Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        val granted = runCatching {
+            contentResolver.takePersistableUriPermission(uri, readWrite)
+        }.isSuccess
+        if (!granted) {
+            val readOnly = runCatching {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }.isSuccess
+            if (localFilesUi.visible) {
+                localFilesUi.showAuthPrompt(
+                    if (readOnly) {
+                        "该文件夹只授予了读取权限，请重新选择并允许编辑"
+                    } else {
+                        "无法保存文件夹授权，请重试"
+                    },
+                )
+            }
+            return
+        }
+        updateSettings(duoSettings.copy(localTreeUri = uri.toString()))
+        localFilesUi.updateTreeAvailable(true)
+        if (localFilesUi.visible) showAuthorizedRoot()
+    }
+
+    private fun grantLocalFolder() {
+        if (!localFilesUi.visible) return
+        setPickerKeepAlive(true)
+        runCatching { folderGrantLauncher.launch(null) }
+            .onFailure {
+                setPickerKeepAlive(false)
+                localFilesUi.reportError("无法打开系统授权页")
+            }
+    }
+
+    private fun revokeLocalFolder() {
+        val raw = duoSettings.localTreeUri.trim()
+        if (raw.isNotEmpty()) {
+            val uri = runCatching { Uri.parse(raw) }.getOrNull()
+            if (uri != null) {
+                val readWrite = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                if (runCatching {
+                        contentResolver.releasePersistableUriPermission(uri, readWrite)
+                    }.isFailure
+                ) {
+                    runCatching {
+                        contentResolver.releasePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                        )
+                    }
                 }
             }
         }
+        updateSettings(duoSettings.copy(localTreeUri = ""))
+        localFilesUi.updateTreeAvailable(false)
+        showAppRoot()
+        localFilesUi.note("已撤销文件夹授权，当前使用应用目录")
+    }
+
+    private fun authorizedTreeUri(): Uri? {
+        val raw = duoSettings.localTreeUri.trim()
+        if (raw.isEmpty()) return null
+        val uri = runCatching { Uri.parse(raw) }.getOrNull() ?: return null
+        return uri.takeIf { LocalFileAccess.hasTreePermission(this, it) }
+    }
+
+    private fun showAppRoot() {
+        localFilesUi.updateTreeAvailable(authorizedTreeUri() != null)
+        val root = LocalFileAccess.appRoot(this)
+        localFilesUi.beginAt(root)
+        loadLocal(root)
+    }
+
+    private fun showAuthorizedRoot() {
+        val uri = authorizedTreeUri()
+        if (uri == null) {
+            localFilesUi.updateTreeAvailable(false)
+            localFilesUi.showAuthPrompt("尚未授权文件夹，或授权已被系统收回")
+            return
+        }
+        val root = LocalFileAccess.authorizedRoot(this, uri)
+        if (root == null) {
+            localFilesUi.updateTreeAvailable(false)
+            localFilesUi.showAuthPrompt("无法读取该文件夹，请重新授权")
+            return
+        }
+        localFilesUi.updateTreeAvailable(true)
+        localFilesUi.beginAt(root)
+        loadLocal(root)
+    }
+
+    private fun selectLocalRoot(root: LocalRootKind) {
+        when (root) {
+            LocalRootKind.APP -> showAppRoot()
+            LocalRootKind.AUTHORIZED -> showAuthorizedRoot()
+        }
+    }
+
+    private fun loadLocal(location: LocalLocation) {
+        val token = localFilesUi.loadToken
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching { LocalFileAccess.list(this@MainActivity, location) }
+            }
+            result.onSuccess { entries ->
+                localFilesUi.loaded(token, location, entries)
+            }.onFailure { error ->
+                if (location.root == LocalRootKind.AUTHORIZED) {
+                    localFilesUi.updateTreeAvailable(false)
+                }
+                localFilesUi.failed(
+                    token,
+                    "无法读取文件夹：${error.message ?: "权限或存储不可用"}",
+                )
+            }
+        }
+    }
+
+    private fun openLocalEntry(entry: LocalEntry) {
+        if (!entry.isDirectory) return
+        val current = localFilesUi.current ?: return
+        val next = when (current.root) {
+            LocalRootKind.APP -> LocalLocation(
+                root = LocalRootKind.APP,
+                label = entry.name,
+                path = entry.path,
+            )
+
+            LocalRootKind.AUTHORIZED -> {
+                val documentId = entry.documentId
+                if (documentId == null) {
+                    localFilesUi.reportError("无法打开该文件夹")
+                    return
+                }
+                LocalLocation(
+                    root = LocalRootKind.AUTHORIZED,
+                    label = entry.name,
+                    path = entry.path,
+                    treeUri = current.treeUri,
+                    documentId = documentId,
+                )
+            }
+        }
+        localFilesUi.push(next)
+        loadLocal(next)
+    }
+
+    private fun localBack() {
+        if (!localFilesUi.visible) return
+        if (localFilesUi.authPrompt) {
+            localFilesUi.close()
+            return
+        }
+        val target = localFilesUi.pop()
+        if (target == null) {
+            localFilesUi.close()
+        } else {
+            loadLocal(target)
+        }
+    }
+
+    private fun refreshLocal() {
+        if (!localFilesUi.visible || localFilesUi.authPrompt) return
+        val current = localFilesUi.current ?: return
+        localFilesUi.retry()
+        loadLocal(current)
+    }
+
+    private fun openLocalUpload() {
+        val client = sessionController ?: return
+        if (duoSettings.viewOnly) return
+        filesUi.error = null
+        localFilesUi.open(
+            mode = LocalPickerMode.UPLOAD,
+            remoteDir = client.fileState.path,
+            pending = null,
+        )
+        if (authorizedTreeUri() != null) showAuthorizedRoot() else showAppRoot()
+    }
+
+    private fun openLocalDownload(entry: FileEntry) {
+        val client = sessionController ?: return
+        if (duoSettings.viewOnly) return
+        if (entry.isDirectory) {
+            filesUi.error = "文件夹下载暂未支持"
+            return
+        }
+        val remotePath = entry.fullPath.ifBlank {
+            FileTransferState.childOf(client.fileState.path, entry.name)
+        }
+        filesUi.error = null
+        localFilesUi.open(
+            mode = LocalPickerMode.DOWNLOAD,
+            remoteDir = client.fileState.path,
+            pending = PendingDownload(entry.name, remotePath, entry.size),
+        )
+        if (authorizedTreeUri() != null) showAuthorizedRoot() else showAppRoot()
+    }
+
+    private fun confirmLocalPicker() {
+        when (localFilesUi.mode) {
+            LocalPickerMode.UPLOAD -> confirmLocalUpload()
+            LocalPickerMode.DOWNLOAD -> confirmLocalDownload()
+        }
+    }
+
+    private fun confirmLocalUpload() {
+        val client = sessionController
+        if (client == null || duoSettings.viewOnly) {
+            localFilesUi.reportError("会话未连接")
+            return
+        }
+        val entry = localFilesUi.selected
+        if (entry == null || entry.isDirectory) {
+            localFilesUi.reportError("请选择一个文件")
+            return
+        }
+        val size = LocalFileAccess.sizeOf(this, entry)
         if (size < 0L) {
-            runCatching {
-                contentResolver.openAssetFileDescriptor(uri, "r")?.use { descriptor ->
-                    if (descriptor.length > 0L) size = descriptor.length
-                }
-            }
+            localFilesUi.reportError("无法读取文件大小")
+            return
         }
-        val displayName = name?.trim()?.takeIf { it.isNotEmpty() } ?: return null
-        if (size < 0L) return null
-        return displayName to size
+        val input = LocalFileAccess.openInput(this, entry)
+        if (input == null) {
+            localFilesUi.reportError("无法打开该文件")
+            return
+        }
+        val remoteDir = localFilesUi.remoteDir
+        localFilesUi.close()
+        filesUi.error = null
+        filesUi.tab = FilesTab.QUEUE
+        val started = client.uploadFile(
+            name = entry.name,
+            size = size,
+            modifiedTime = entry.modifiedTime,
+            input = input,
+            remoteDir = remoteDir,
+        )
+        if (!started) filesUi.error = client.fileState.error ?: "无法开始上传"
+    }
+
+    private fun confirmLocalDownload() {
+        val client = sessionController
+        if (client == null || duoSettings.viewOnly) {
+            localFilesUi.reportError("会话未连接")
+            return
+        }
+        val pending = localFilesUi.pendingDownload
+        if (pending == null) {
+            localFilesUi.reportError("没有待下载文件")
+            return
+        }
+        val location = localFilesUi.current
+        if (location == null) {
+            localFilesUi.reportError("请选择保存文件夹")
+            return
+        }
+        val output = LocalFileAccess.createOutput(this, location, pending.name)
+        if (output == null) {
+            localFilesUi.reportError("无法在此文件夹创建文件")
+            return
+        }
+        val started = client.downloadFile(
+            remotePath = pending.remotePath,
+            name = pending.name,
+            size = pending.size,
+            output = output.stream,
+        )
+        if (!started) {
+            output.delete()
+            localFilesUi.reportError(client.fileState.error ?: "无法开始下载")
+            return
+        }
+        localFilesUi.close()
+        filesUi.error = null
+        filesUi.tab = FilesTab.QUEUE
     }
 
     private fun connectSession(device: DemoDevice) {
@@ -817,6 +1039,7 @@ class MainActivity : ComponentActivity() {
         settingsReturnRoute = AppRoute.Home
         filesReturnRoute = AppRoute.Home
         filesUi.reset()
+        localFilesUi.close()
         showHelp = false
         streamingUi.resetForNewSession()
         controlCenter.close()
@@ -873,11 +1096,13 @@ class MainActivity : ComponentActivity() {
         if (client.videoTrack == null || route == AppRoute.Files || duoSettings.viewOnly) return
         filesReturnRoute = if (route == AppRoute.ControlCenter) AppRoute.ControlCenter else AppRoute.Home
         filesUi.reset()
+        localFilesUi.close()
         route = AppRoute.Files
         client.listFiles()
     }
 
     private fun closeFiles() {
+        localFilesUi.close()
         route = filesReturnRoute
         filesReturnRoute = AppRoute.Home
     }
@@ -1152,6 +1377,10 @@ class MainActivity : ComponentActivity() {
         }
         if (!hasToken) {
             handleLoginBack()
+            return
+        }
+        if (localFilesUi.visible) {
+            localBack()
             return
         }
         when (route) {
@@ -1767,6 +1996,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleFilesKey(event: KeyEvent): Boolean {
+        if (localFilesUi.visible) return handleLocalPickerKey(event)
         val client = sessionController ?: return false
         if (event.action != KeyEvent.ACTION_UP) return isPadKey(event.keyCode)
         filesUi.error = null
@@ -1836,7 +2066,7 @@ class MainActivity : ComponentActivity() {
                         filesUi.select(0)
                     }
 
-                    else -> filesUi.requestDownload = true
+                    else -> openLocalDownload(entry)
                 }
                 true
             }
@@ -1853,12 +2083,17 @@ class MainActivity : ComponentActivity() {
             }
 
             KeyEvent.KEYCODE_BUTTON_X -> {
-                filesUi.requestUpload = true
+                openLocalUpload()
                 true
             }
 
             KeyEvent.KEYCODE_BUTTON_Y -> {
-                filesUi.requestDownload = true
+                val entry = entries.getOrNull(filesUi.index)
+                when {
+                    entry == null -> filesUi.error = "请选择一个文件"
+                    entry.isDirectory -> filesUi.error = "文件夹下载暂未支持"
+                    else -> openLocalDownload(entry)
+                }
                 true
             }
 
@@ -1869,6 +2104,85 @@ class MainActivity : ComponentActivity() {
 
             KeyEvent.KEYCODE_BUTTON_R1 -> {
                 filesUi.moveTab(1)
+                true
+            }
+
+            else -> isPadKey(event.keyCode)
+        }
+    }
+
+    private fun handleLocalPickerKey(event: KeyEvent): Boolean {
+        if (event.action != KeyEvent.ACTION_UP) return isPadKey(event.keyCode)
+        localFilesUi.reportError(null)
+        if (localFilesUi.authPrompt) {
+            return when (event.keyCode) {
+                KeyEvent.KEYCODE_BUTTON_B,
+                KeyEvent.KEYCODE_DPAD_CENTER,
+                KeyEvent.KEYCODE_ENTER,
+                -> {
+                    grantLocalFolder()
+                    true
+                }
+
+                KeyEvent.KEYCODE_BUTTON_X -> {
+                    showAppRoot()
+                    true
+                }
+
+                KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_BACK -> {
+                    localFilesUi.close()
+                    true
+                }
+
+                else -> isPadKey(event.keyCode)
+            }
+        }
+        val entries = localFilesUi.entries
+        return when (event.keyCode) {
+            KeyEvent.KEYCODE_DPAD_UP -> {
+                localFilesUi.moveIndex(-1, entries.size)
+                true
+            }
+
+            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                localFilesUi.moveIndex(1, entries.size)
+                true
+            }
+
+            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                localBack()
+                true
+            }
+
+            KeyEvent.KEYCODE_DPAD_RIGHT,
+            KeyEvent.KEYCODE_BUTTON_B,
+            KeyEvent.KEYCODE_DPAD_CENTER,
+            KeyEvent.KEYCODE_ENTER,
+            -> {
+                val entry = localFilesUi.selected
+                when {
+                    entry != null && entry.isDirectory -> openLocalEntry(entry)
+                    localFilesUi.mode == LocalPickerMode.UPLOAD -> confirmLocalUpload()
+                    else -> confirmLocalDownload()
+                }
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_BACK -> {
+                localBack()
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_X -> {
+                refreshLocal()
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_R1 -> {
+                when (localFilesUi.current?.root ?: LocalRootKind.APP) {
+                    LocalRootKind.APP -> showAuthorizedRoot()
+                    LocalRootKind.AUTHORIZED -> showAppRoot()
+                }
                 true
             }
 
@@ -1945,6 +2259,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        setPickerKeepAlive(false)
         displayManager.unregisterDisplayListener(displayListener)
         loginController?.dispose()
         sessionController?.disconnect()

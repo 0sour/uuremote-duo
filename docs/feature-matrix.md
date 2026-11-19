@@ -89,7 +89,7 @@
 | 文本输入兜底 `SendToRom{RomMsg_Text}` | web / uux | 🟢 | P1 | CONTROL 的 `text_input` 发送失败时，改走 TEXT 通道二进制 `Main.SendToRom` |
 | 剪贴板同步（文字） | uux / YOUYOU | 🟢 | P1 | 默认关闭；TEXT 通道 RPC，双向 ≤2048 字，回写后抑制回声 |
 | 剪贴板图片 / 文件 | 官方 / uux | ⬜ | P2 | 官方支持移动端与 Windows 互传图片/文件；我们仅文字 |
-| 文件传输（目录浏览 + 单文件上下传） | uux / 官方 | 🟢 | P1 | 控制中心「更多→文件传输」；SAF 选择本机文件/保存位置；TEXT PPID 51 + FTP protobuf；单任务、64 KiB 块、15/30 秒超时；**未在 RP Duo + Windows 电脑端验收** |
+| 文件传输（目录浏览 + 单文件上下传） | uux / 官方 | 🟢 | P1 | 控制中心「更多→文件传输」；app 内本机浏览 + 应用目录/一次性授权文件夹；TEXT PPID 51 + FTP protobuf；单任务、64 KiB 块、15/30 秒超时；RP Duo + Windows 已验收小文件上下传 |
 | 文件夹批量 / 拖放 / 剪贴板文件 | uux / 官方 | ⬜ | P2 | 同一 FILE 通道的目录树、拖放与剪贴板文件协议；当前只做单文件 |
 | 终端 / 端口映射 | 官方 / uux | ⬜ | P2 | 官方 PC 控制中心工具；需要被控端 RPC/终端通道 |
 | 中文词典扩容 | 官方 | 🟡 | P1 | 现有 asset 很小，候选覆盖不足 |

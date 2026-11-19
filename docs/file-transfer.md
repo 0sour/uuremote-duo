@@ -1,7 +1,10 @@
 # 文件传输（MVP）
 
-> 状态：代码、协议编解码与状态机单测完成；**尚未在 RP Duo + Windows 电脑端做真机验收**。
+> 状态：协议、状态机、单测与 RP Duo + Windows 电脑端的目录浏览/单文件上下传已验收。
 > 范围：远端目录浏览、单文件上传、单文件下载。文件夹批量、拖放、剪贴板文件、下载断点续传不在本版。
+>
+> 本机文件选择已改为 **app 内自建浏览页**：应用专属传输目录无需权限，另可选一次授权一个
+> 本机文件夹；之后每次上传/下载都不再启动系统文件管理器。
 
 ## 入口与布局
 
@@ -116,8 +119,28 @@ sequenceDiagram
 ```
 
 - 下载块序号从 **1** 开始；上传块序号从 **0** 开始。
-- 写入目标由 Android SAF `CreateDocument` 选择；失败/取消可能留下部分文件。
+- 写入目标由 app 内本机文件页选择；失败/取消时尽量删除未完成的空文件，已写入的部分文件可能保留。
 - 下载续传、暂停、文件夹递归未实现。
+
+## 本机文件（app 内浏览）
+
+文件页的「上传」「下载」不再调用系统文件选择器，而是打开 app 自建的本机文件页：
+
+- **应用目录**：`Android/data/com.sour.duoremote/files/DuoRemote`。应用自身可读写，
+  不需要运行时权限，也不申请 `MANAGE_EXTERNAL_STORAGE`。
+- **授权文件夹**：首次点「授权文件夹」时打开一次系统的
+  `ACTION_OPEN_DOCUMENT_TREE`，用 `takePersistableUriPermission` 保存读/写权限。
+  之后通过 `DocumentsContract` 直接列目录、读文件和创建文件；每次传输都不会再弹系统页面。
+- 上传：在本机页选中文件 → `openInputStream`/`FileInputStream` → 现有上传状态机。
+- 下载：在本机页进入目标文件夹 → 按远端文件名创建文件（重名自动改为 `name (1).ext`）
+  → `openOutputStream`/`FileOutputStream` → 现有下载状态机。
+- 应用目录和授权文件夹都支持进入子目录、上一级、刷新；手柄 B 打开/确认、A 返回、
+  X 刷新、L1/R1 在两种根之间切换。
+- 授权文件夹只接受读+写权限；系统只给只读时会提示重新授权。授权被系统收回后，
+  本机页会显示授权提示，不会回退到系统文件管理器。授权页顶部提供「撤销授权」，
+  会释放持久化 URI 权限并切回应用目录。
+- 第一次授权仍会短暂打开系统页面。串流期间授权时，`SessionKeepAliveService`
+  （短时前台服务、`dataSync`）会尽量保持会话；真机已验证授权完成后串流仍在。
 
 ## 目录浏览
 
@@ -127,8 +150,8 @@ sequenceDiagram
 
 ## 隐私与安全
 
-- 不访问任意本机路径：上传文件由 SAF 选择，下载目标由 SAF 创建。
-- 不记录文件内容、token、签名 key 或远端路径日志。
+- 不访问任意本机路径：只列应用专属目录或用户一次性授权的单个文件夹；不申请全盘文件权限。
+- 授权 URI 持久化在 DataStore；不记录文件内容、token、签名 key 或远端路径日志。
 - 「仅观看」下入口禁用，避免在只读会话中修改远端文件。
 - 远端文件仍由被控端权限约束；本功能不是提权工具。
 
@@ -142,5 +165,9 @@ sequenceDiagram
 
 - `FileTransferCodecTest`：Main/RPC 包络、目录/文件列表、zlib、块确认、feature flags。
 - `FileTransferEngineTest`：目录排序、上传逐块确认与双 Complete、下载块/回执 request_id、超时、路径边界。
+- `LocalFilesUiStateTest`：本机页打开/根切换、进入/上一级、选择、过期目录结果丢弃、授权提示。
 
-真机验收项见 [v1-checklist.md](v1-checklist.md) 第 9 节。
+2026-11-19 RP Duo + Windows 电脑端实测：`C:\` 与 `C:\Users\Public` 目录浏览；应用目录
+上传/下载 27 B 文件；一次授权 `Documents/DuoRemoteTest` 后，从授权文件夹上传及下载到该文件夹
+均为 27 B；重名自动改为 `grant-test (1).txt`；授权页关闭后串流保持连接。尚未实测 >100 MB
+文件、取消/失败清理和 15/30 秒超时。真机验收项见 [v1-checklist.md](v1-checklist.md) 第 9 节。
