@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Laptop
 import androidx.compose.material.icons.outlined.Monitor
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Refresh
@@ -82,6 +83,7 @@ data class DemoDevice(
     val online: Boolean,
     val lastSeen: String,
     val resolution: String,
+    val shared: Boolean = false,
 )
 
 val EmptyDevice = DemoDevice("", "还没有设备", "—", false, "—", "—")
@@ -453,6 +455,7 @@ fun DualBottomScreen(
     onAccount: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenPreferences: () -> Unit,
+    onManageDevices: () -> Unit,
     onBack: () -> Unit,
     preferenceSummary: String,
     sessionStatus: String? = null,
@@ -516,6 +519,7 @@ fun DualBottomScreen(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            DuoIconButton(Icons.Outlined.MoreVert, "设备管理", onManageDevices)
             DuoIconButton(Icons.Outlined.Person, "账号", onAccount)
             DuoIconButton(Icons.Outlined.Refresh, "刷新设备", onClick = {
                 onRefresh()
@@ -561,6 +565,7 @@ fun DualBottomScreen(
                 "A" to "返回",
                 "Y" to "刷新",
                 "X" to "账号",
+                "SELECT" to "管理",
                 "START" to "说明",
             ),
             trailing = if (selected.id.isEmpty()) "等待绑定电脑" else "焦点: ${selected.name}",
@@ -794,6 +799,7 @@ fun SingleHomeScreen(
     onAccount: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenPreferences: () -> Unit,
+    onManageDevices: () -> Unit,
     onBack: () -> Unit,
     preferenceSummary: String,
     sessionStatus: String? = null,
@@ -869,6 +875,7 @@ fun SingleHomeScreen(
                 } else {
                     DuoChip("$online 台在线", if (online > 0) ChipTone.Online else ChipTone.Ghost, online > 0)
                 }
+                DuoIconButton(Icons.Outlined.MoreVert, "设备管理", onManageDevices)
                 DuoIconButton(Icons.Outlined.Person, "账号", onAccount)
                 DuoIconButton(Icons.Outlined.Refresh, "刷新设备", onClick = {
                     onRefresh()
@@ -953,6 +960,7 @@ fun SingleHomeScreen(
                     "A" to "返回",
                     "Y" to "刷新",
                     "X" to "账号",
+                    "SELECT" to "管理",
                     "START" to "说明",
                 ),
                 trailing = if (selected.id.isEmpty()) "等待绑定电脑" else "焦点: ${selected.name}",

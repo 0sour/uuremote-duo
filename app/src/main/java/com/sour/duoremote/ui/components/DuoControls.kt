@@ -94,7 +94,7 @@ fun DuoTabBar(
 fun DuoPageHeader(
     title: String,
     subtitle: String,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     trailing: String? = null,
     compact: Boolean = true,
@@ -108,19 +108,21 @@ fun DuoPageHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(
-            Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(9.dp))
-                .clickable(onClick = onBack),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                Icons.Outlined.KeyboardArrowLeft,
-                contentDescription = "返回",
-                tint = colors.textSecondary,
-                modifier = Modifier.size(18.dp),
-            )
+        if (onBack != null) {
+            Box(
+                Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(9.dp))
+                    .clickable(onClick = onBack),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Outlined.KeyboardArrowLeft,
+                    contentDescription = "返回",
+                    tint = colors.textSecondary,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         }
         Column(Modifier.weight(1f)) {
             Text(

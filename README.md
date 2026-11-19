@@ -52,7 +52,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 版本 | `0.3.0`（development，versionCode 3） |
 | 主要验证设备 | Retroid Pocket Duo（双屏 1920×1080 + 1280×960，Android 掌机） |
 | 单屏模式 | 上屏 Activity / 下屏 Presentation 均可作为唯一屏 |
-| 自动测试 | 102 个 JVM 单测通过 |
+| 自动测试 | 106 个 JVM 单测通过 |
 | 构建 | debug / R8 release（默认未签名）通过；lint 通过 |
 | 发布 | **没有 GitHub Release，没有随仓库分发的 APK** |
 | 网络验收 | 1080p60 / 720p30、控制中心重连、仅观看、fit/fill 缩放、文件传输与文件夹上下传已真机验证 |
@@ -65,7 +65,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 模块 | 内容 |
 | --- | --- |
 | 登录 | 扫码登录、短信登录、token 持久化；登录页支持单屏二维码 |
-| 设备 | 设备列表、在线状态、手动刷新、连接偏好摘要 |
+| 设备 | 设备列表、在线状态、手动刷新、连接偏好摘要；设备管理页支持重命名、重启、从账号移除（带确认） |
 | 串流 | 加入房间、信令、control、WebRTC H.264/Opus；1080p60 / 720p30 |
 | 双屏 | 上屏 Activity 只读视频/摘要；下屏 Presentation 承载完整 UI |
 | 单屏 | 上屏或下屏作为唯一宿主；设置、账号、控制中心、本地菜单均有单屏布局 |
@@ -100,7 +100,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 多显示器 / 超级屏 / 虚拟屏 | 需要 STREAMER 多流与电脑端能力，后续 |
 | HDR / 4K / 144Hz / H.265 / AV1 | 需要协议档位、编码器与硬解能力，后续 |
 | 远程开机（WOL） | **暂不做**：没有可唤醒的测试硬件/被控端条件，无法验收 |
-| 重启 / 关机 / 定时关机 | 需要电脑端 RPC，后续 |
+| 关机 / 定时关机 | 重启已通过账号 API 接入；关机和定时需要电脑端 RPC，后续 |
 | 终端 / 端口映射 | 需要电脑端 RPC 与端口映射，后续 |
 | 按键映射 / 虚拟按键 / 宏 / 轮盘 | 不做触屏虚拟按键；实体手柄→键鼠模拟列为 P2 |
 | 麦克风 / 语音 | v1 不采集 |
@@ -120,7 +120,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 实时 | `io.github.webrtc-sdk:android:125.6422.07`（H.264 / Opus） |
 | 存储 | DataStore Preferences；EncryptedSharedPreferences / Android Keystore 保存敏感材料 |
 | 二维码 | ZXing core `3.5.3` |
-| 测试 | JUnit 4，MockWebServer；102 个 JVM 单测 |
+| 测试 | JUnit 4，MockWebServer；106 个 JVM 单测 |
 | CI | GitHub Actions：单测 + debug APK artifact；**不创建 Release** |
 
 ## 架构
@@ -187,6 +187,7 @@ uuremote-duo/
 │   ├── BUILDING.md                   # 构建与真机调试
 │   ├── feature-matrix.md             # 功能矩阵与边界
 │   ├── feature-parity.md             # 官方/第三方对照
+│   ├── device-management.md          # 重命名/重启/移除设备
 │   ├── file-transfer.md              # 文件传输协议与限制
 │   ├── gamepad-emulation.md          # 桌面/FPS/模拟器手柄映射
 │   ├── v1-checklist.md               # 验收清单

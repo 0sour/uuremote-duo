@@ -13,4 +13,7 @@ sealed interface AppRoute {
     data object Account : AppRoute
     data object ControlCenter : AppRoute
     data object Files : AppRoute
+
+    /** Account-level device management: rename, reboot, or unbind. */
+    data object Devices : AppRoute
 }

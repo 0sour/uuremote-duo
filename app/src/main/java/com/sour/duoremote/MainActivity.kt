@@ -58,6 +58,10 @@ import com.sour.duoremote.ui.controlcenter.ControlCenterScreen
 import com.sour.duoremote.ui.controlcenter.ControlCenterState
 import com.sour.duoremote.ui.controlcenter.ControlField
 import com.sour.duoremote.ui.controlcenter.controlRows
+import com.sour.duoremote.ui.devices.DeviceManageAction
+import com.sour.duoremote.ui.devices.DeviceManageScreen
+import com.sour.duoremote.ui.devices.DeviceManageTopPreview
+import com.sour.duoremote.ui.devices.DeviceManageUiState
 import com.sour.duoremote.ui.files.FilesScreen
 import com.sour.duoremote.ui.files.FilesTab
 import com.sour.duoremote.ui.files.FilesTopPreview
@@ -129,6 +133,7 @@ class MainActivity : ComponentActivity() {
     private val controlCenter = ControlCenterState()
     private val filesUi = FilesUiState()
     private val localFilesUi = LocalFilesUiState()
+    private val deviceManage = DeviceManageUiState()
     private val selectedId = mutableStateOf("")
     private var duoSettings by mutableStateOf(DuoSettings())
 
@@ -332,6 +337,7 @@ class MainActivity : ComponentActivity() {
                         sessionController?.cancelFileTransfer()
                         localFilesUi.close()
                         if (route == AppRoute.Files) closeFiles()
+                        if (route == AppRoute.Devices) closeDeviceManage()
                     }
                 }
 
@@ -478,6 +484,17 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                AppRoute.Devices -> when (layout) {
+                    HostLayout.DUAL -> DeviceManageTopPreview(
+                        devices = devices,
+                        selectedId = selectedId.value,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+
+                    HostLayout.SINGLE_TOP -> DeviceManageRouteContent(Modifier.fillMaxSize())
+                    HostLayout.SINGLE_BOTTOM -> BlackHost(modifier = Modifier.fillMaxSize())
+                }
+
                 AppRoute.Files -> {
                     val video = sessionController?.videoTrack
                     val client = sessionController
@@ -553,6 +570,7 @@ class MainActivity : ComponentActivity() {
                             onAccount = ::openAccount,
                             onOpenSettings = { openSettings() },
                             onOpenPreferences = ::openPreferences,
+                            onManageDevices = ::openDeviceManage,
                             onBack = ::handleBack,
                             preferenceSummary = preferenceSummary(),
                             sessionStatus = homeStatus(),
@@ -568,6 +586,23 @@ class MainActivity : ComponentActivity() {
      * The remote file page and the in-app local picker share one host slot. Keeping this in one
      * function ensures the Activity and the bottom Presentation render the same local state.
      */
+    @Composable
+    private fun DeviceManageRouteContent(modifier: Modifier = Modifier) {
+        DeviceManageScreen(
+            devices = devices,
+            selectedId = selectedId.value,
+            ui = deviceManage,
+            onSelect = { selectedId.value = it.id },
+            onRename = { beginDeviceAction(DeviceManageAction.RENAME) },
+            onReboot = { beginDeviceAction(DeviceManageAction.REBOOT) },
+            onRemove = { beginDeviceAction(DeviceManageAction.REMOVE) },
+            onConfirm = ::confirmDeviceAction,
+            onCancelAction = deviceManage::cancelAction,
+            onBack = ::closeDeviceManage,
+            modifier = modifier,
+        )
+    }
+
     @Composable
     private fun FilesRouteContent(client: SessionController, modifier: Modifier = Modifier) {
         if (localFilesUi.visible) {
@@ -679,6 +714,8 @@ class MainActivity : ComponentActivity() {
                     BlackHost(modifier = Modifier.fillMaxSize())
                 }
 
+                AppRoute.Devices -> DeviceManageRouteContent(Modifier.fillMaxSize())
+
                 AppRoute.Home -> when {
                     video != null && client != null && layout == HostLayout.DUAL -> DualStreamingBottom(
                         title = activeDeviceName ?: "正在串流",
@@ -725,6 +762,7 @@ class MainActivity : ComponentActivity() {
                         onAccount = ::openAccount,
                         onOpenSettings = { openSettings() },
                         onOpenPreferences = ::openPreferences,
+                        onManageDevices = ::openDeviceManage,
                         onBack = ::handleBack,
                         preferenceSummary = preferenceSummary(),
                         sessionStatus = homeStatus(),
@@ -742,6 +780,7 @@ class MainActivity : ComponentActivity() {
                         onAccount = ::openAccount,
                         onOpenSettings = { openSettings() },
                         onOpenPreferences = ::openPreferences,
+                        onManageDevices = ::openDeviceManage,
                         onBack = ::handleBack,
                         preferenceSummary = preferenceSummary(),
                         sessionStatus = homeStatus(),
@@ -1248,6 +1287,180 @@ class MainActivity : ComponentActivity() {
         settingsReturnRoute = AppRoute.Home
     }
 
+    private fun openDeviceManage() {
+        if (duoSettings.viewOnly) {
+            deviceError = "仅观看模式下不能管理设备"
+            return
+        }
+        val index = devices.indexOfFirst { it.id == selectedId.value }
+        deviceManage.reset()
+        if (index >= 0) deviceManage.select(index)
+        route = AppRoute.Devices
+    }
+
+    private fun closeDeviceManage() {
+        deviceManage.reset()
+        route = AppRoute.Home
+    }
+
+    private fun handleDevicesKey(event: KeyEvent): Boolean {
+        if (event.action != KeyEvent.ACTION_UP) return false
+        val code = event.keyCode
+        val action = deviceManage.action
+        if (action != null) {
+            if (action == DeviceManageAction.RENAME) {
+                return when (code) {
+                    KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_BACK -> {
+                        deviceManage.cancelAction()
+                        true
+                    }
+
+                    else -> false
+                }
+            }
+            return when (code) {
+                KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_UP -> {
+                    deviceManage.moveConfirm(-1)
+                    true
+                }
+
+                KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_DOWN -> {
+                    deviceManage.moveConfirm(1)
+                    true
+                }
+
+                KeyEvent.KEYCODE_BUTTON_B,
+                KeyEvent.KEYCODE_DPAD_CENTER,
+                KeyEvent.KEYCODE_ENTER,
+                -> {
+                    if (deviceManage.confirmIndex == 0) confirmDeviceAction()
+                    else deviceManage.cancelAction()
+                    true
+                }
+
+                KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_BACK -> {
+                    deviceManage.cancelAction()
+                    true
+                }
+
+                else -> false
+            }
+        }
+        return when (code) {
+            KeyEvent.KEYCODE_DPAD_UP -> {
+                deviceManage.moveIndex(-1, devices.size)
+                true
+            }
+
+            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                deviceManage.moveIndex(1, devices.size)
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_X -> {
+                beginDeviceAction(DeviceManageAction.RENAME)
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_Y -> {
+                beginDeviceAction(DeviceManageAction.REBOOT)
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_SELECT -> {
+                beginDeviceAction(DeviceManageAction.REMOVE)
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_B,
+            KeyEvent.KEYCODE_DPAD_CENTER,
+            KeyEvent.KEYCODE_ENTER,
+            -> {
+                beginDeviceAction(DeviceManageAction.RENAME)
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_BACK -> {
+                closeDeviceManage()
+                true
+            }
+
+            else -> false
+        }
+    }
+
+    private fun beginDeviceAction(action: DeviceManageAction) {
+        val device = devices.getOrNull(deviceManage.index)
+        if (device == null) {
+            deviceManage.error = "请选择一个设备"
+            return
+        }
+        when (action) {
+            DeviceManageAction.RENAME -> deviceManage.begin(action, device.name)
+            DeviceManageAction.REBOOT -> {
+                if (device.online) deviceManage.begin(action, device.name)
+                else deviceManage.error = "设备已离线，无法重启"
+            }
+
+            DeviceManageAction.REMOVE -> {
+                if (!device.online) deviceManage.begin(action, device.name)
+                else deviceManage.error = "在线设备不能移除，请先在该设备退出登录"
+            }
+        }
+    }
+
+    private fun confirmDeviceAction() {
+        val device = devices.getOrNull(deviceManage.index) ?: return
+        val action = deviceManage.action ?: return
+        if (deviceManage.busy) return
+        when (action) {
+            DeviceManageAction.RENAME -> {
+                val name = deviceManage.draftName.trim()
+                if (name.isEmpty() || name.length > 40) {
+                    deviceManage.error = "设备名称须为 1–40 个字符"
+                    return
+                }
+                runDeviceAction(
+                    success = "已重命名为 $name",
+                    block = { it.renameDevice(device.id, name) },
+                )
+            }
+
+            DeviceManageAction.REBOOT -> runDeviceAction(
+                success = "已发送重启请求",
+                block = { it.rebootDevice(device.id) },
+            )
+
+            DeviceManageAction.REMOVE -> runDeviceAction(
+                success = "已从账号移除 ${device.name}",
+                block = { it.unbindDevice(device.id, device.shared) },
+            )
+        }
+    }
+
+    private fun runDeviceAction(
+        success: String,
+        block: suspend (UuApiClient) -> Unit,
+    ) {
+        val client = api
+        if (client == null) {
+            deviceManage.failAction("会话未就绪")
+            return
+        }
+        deviceManage.updateBusy(true)
+        deviceManage.error = null
+        lifecycleScope.launch {
+            runCatching { withContext(Dispatchers.IO) { block(client) } }
+                .onSuccess {
+                    deviceManage.finishAction(success)
+                    refreshDevices()
+                }
+                .onFailure {
+                    deviceManage.failAction(ErrorText.friendly(it, "设备操作失败"))
+                }
+        }
+    }
+
     private fun openAccount() {
         route = AppRoute.Account
         accountIndex = 0
@@ -1475,6 +1688,7 @@ class MainActivity : ComponentActivity() {
         resolution = raw.get("resolution")?.let {
             if (it.isJsonPrimitive) runCatching { it.asString }.getOrNull() else null
         } ?: "—",
+        shared = shared,
     )
 
     private fun formatLastSeen(value: String?): String? {
@@ -1583,6 +1797,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            AppRoute.Devices -> closeDeviceManage()
+
             AppRoute.Home -> {
                 if (sessionController?.videoTrack != null) {
                     streamingUi.localMenu = true
@@ -1637,6 +1853,7 @@ class MainActivity : ComponentActivity() {
                             AppRoute.Account -> handleAccountKey(event)
                             AppRoute.ControlCenter -> handleControlCenterKey(event)
                             AppRoute.Files -> handleFilesKey(event)
+                            AppRoute.Devices -> handleDevicesKey(event)
                             AppRoute.Home -> when {
                                 sessionController?.videoTrack != null -> handleStreamingKey(event)
                                 else -> handleHomeKey(event)
@@ -1696,6 +1913,7 @@ class MainActivity : ComponentActivity() {
                 AppRoute.Account -> handleAccountKey(event)
                 AppRoute.ControlCenter -> handleControlCenterKey(event)
                 AppRoute.Files -> handleFilesKey(event)
+                AppRoute.Devices -> handleDevicesKey(event)
                 AppRoute.Home -> when {
                     sessionController?.videoTrack != null -> handleStreamingKey(event)
                     else -> handleHomeKey(event)
@@ -1909,6 +2127,11 @@ class MainActivity : ComponentActivity() {
 
         if (code == KeyEvent.KEYCODE_BUTTON_Y) {
             refreshDevices()
+            return true
+        }
+
+        if (code == KeyEvent.KEYCODE_BUTTON_SELECT) {
+            openDeviceManage()
             return true
         }
 

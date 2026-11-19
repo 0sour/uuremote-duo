@@ -63,6 +63,7 @@ class UuApiClient(
         val os: String,
         val lastSeen: String?,
         val raw: JsonObject,
+        val shared: Boolean = false,
     )
 
     data class Room(
@@ -161,36 +162,64 @@ class UuApiClient(
         val data = request("GET", "/api/v1/device/list", null)
             ?: throw UuApiException(0, 0, "设备列表为空")
         val ownDeviceId = secure.deviceId()
-        val merged = mutableListOf<JsonObject>()
-        data.getAsJsonArray("my_binded_devices")?.forEach { element ->
-            if (element.isJsonObject) merged += element.asJsonObject
-        }
-        data.getAsJsonArray("others_shared_devices")?.forEach { element ->
-            if (element.isJsonObject) merged += element.asJsonObject
-        }
-
         val seen = mutableSetOf<String>()
-        return merged.mapNotNull { item ->
-            val id = item.stringOrNull("device_id") ?: return@mapNotNull null
-            if (id == ownDeviceId || !seen.add(id)) return@mapNotNull null
-            val status = item.stringOrNull("status")
-                ?: item.get("online")?.takeIf { !it.isJsonNull }?.asBoolean?.toString()
-            val online = status != "offline" && status != "false" && status != "0"
-            Device(
-                id = id,
-                name = item.stringOrNull("alias")
-                    ?: item.stringOrNull("device_name")
-                    ?: item.stringOrNull("name")
-                    ?: "我的电脑",
-                online = online,
-                os = item.stringOrNull("system_name")
-                    ?: item.stringOrNull("os")
-                    ?: "Windows",
-                lastSeen = item.stringOrNull("last_online_time")
-                    ?: item.stringOrNull("last_seen"),
-                raw = item,
-            )
+        val result = mutableListOf<Device>()
+        for ((key, shared) in listOf("my_binded_devices" to false, "others_shared_devices" to true)) {
+            data.getAsJsonArray(key)?.forEach { element ->
+                if (!element.isJsonObject) return@forEach
+                val item = element.asJsonObject
+                val id = item.stringOrNull("device_id") ?: return@forEach
+                if (id == ownDeviceId || !seen.add(id)) return@forEach
+                val status = item.stringOrNull("status")
+                    ?: item.get("online")?.takeIf { !it.isJsonNull }?.asBoolean?.toString()
+                result += Device(
+                    id = id,
+                    name = item.stringOrNull("alias")
+                        ?: item.stringOrNull("device_name")
+                        ?: item.stringOrNull("name")
+                        ?: "我的电脑",
+                    online = status != "offline" && status != "false" && status != "0",
+                    os = item.stringOrNull("system_name")
+                        ?: item.stringOrNull("os")
+                        ?: "Windows",
+                    lastSeen = item.stringOrNull("last_online_time")
+                        ?: item.stringOrNull("last_seen"),
+                    raw = item,
+                    shared = shared,
+                )
+            }
         }
+        return result
+    }
+
+    /** Renames a bound device. The alias is trimmed and limited to 40 characters. */
+    suspend fun renameDevice(deviceId: String, alias: String) {
+        validateDeviceId(deviceId)
+        val name = alias.trim()
+        require(name.isNotEmpty() && name.length <= 40) { "设备名称须为 1–40 个字符" }
+        require(name.none { it.isISOControl() }) { "设备名称不能包含控制字符" }
+        request(
+            "PUT",
+            "/api/v1/device/$deviceId",
+            JsonObject().apply { addProperty("alias", name) },
+        )
+    }
+
+    /** Unbinds a device from this account. Shared devices use the share endpoint. */
+    suspend fun unbindDevice(deviceId: String, shared: Boolean) {
+        validateDeviceId(deviceId)
+        val prefix = if (shared) "/api/v1/device/share/$deviceId" else "/api/v1/device/$deviceId"
+        request("POST", "$prefix/unbind", null)
+    }
+
+    /** Requests a remote reboot. The host only accepts this while the device is online. */
+    suspend fun rebootDevice(deviceId: String) {
+        validateDeviceId(deviceId)
+        request("POST", "/api/v1/device/$deviceId/reboot", null)
+    }
+
+    private fun validateDeviceId(deviceId: String) {
+        require(validDeviceId(deviceId)) { "设备 ID 无效" }
     }
 
     /**
@@ -337,6 +366,13 @@ class UuApiClient(
     class AuthExpiredException(message: String) : Exception(message)
 
     companion object {
+        internal fun validDeviceId(deviceId: String): Boolean =
+            deviceId.isNotEmpty() &&
+                deviceId.length <= 128 &&
+                deviceId.all {
+                    it in 'A'..'Z' || it in 'a'..'z' || it in '0'..'9' || it == '_' || it == '-'
+                }
+
         private const val BASE_URL = "https://api.nrd.nie.163.com"
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
