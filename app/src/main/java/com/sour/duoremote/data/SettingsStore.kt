@@ -49,6 +49,8 @@ data class DuoSettings(
     val diagnostics: Boolean = false,
     /** Enter Android picture-in-picture when a single-screen stream is backgrounded. */
     val pipOnBackground: Boolean = true,
+    /** 0 = follow system; otherwise 20..100 percent applied to both panels. */
+    val screenBrightness: Int = 0,
     /** Home/device-manager ordering: online / name / recent. */
     val deviceSort: String = "online",
     /** Comma-separated recent device ids, newest first. */
@@ -95,6 +97,7 @@ class SettingsStore(private val context: Context) {
                 focusRingStyle = prefs[KEY_FOCUS_RING] ?: "white",
                 diagnostics = prefs[KEY_DIAGNOSTICS] ?: false,
                 pipOnBackground = prefs[KEY_PIP_ON_BACKGROUND] ?: true,
+                screenBrightness = (prefs[KEY_SCREEN_BRIGHTNESS] ?: 0).coerceIn(0, 100),
                 deviceSort = prefs[KEY_DEVICE_SORT] ?: "online",
                 recentDeviceIds = prefs[KEY_RECENT_DEVICE_IDS].orEmpty(),
                 localTreeUri = prefs[KEY_LOCAL_TREE_URI].orEmpty(),
@@ -131,6 +134,7 @@ class SettingsStore(private val context: Context) {
             prefs[KEY_FOCUS_RING] = settings.focusRingStyle
             prefs[KEY_DIAGNOSTICS] = settings.diagnostics
             prefs[KEY_PIP_ON_BACKGROUND] = settings.pipOnBackground
+            prefs[KEY_SCREEN_BRIGHTNESS] = settings.screenBrightness.coerceIn(0, 100)
             prefs[KEY_DEVICE_SORT] = settings.deviceSort
             prefs[KEY_RECENT_DEVICE_IDS] = settings.recentDeviceIds
             prefs[KEY_LOCAL_TREE_URI] = settings.localTreeUri
@@ -210,6 +214,7 @@ class SettingsStore(private val context: Context) {
         val KEY_FOCUS_RING = stringPreferencesKey("focus_ring")
         val KEY_DIAGNOSTICS = booleanPreferencesKey("diagnostics")
         val KEY_PIP_ON_BACKGROUND = booleanPreferencesKey("pip_on_background")
+        val KEY_SCREEN_BRIGHTNESS = intPreferencesKey("screen_brightness")
         val KEY_DEVICE_SORT = stringPreferencesKey("device_sort")
         val KEY_RECENT_DEVICE_IDS = stringPreferencesKey("recent_device_ids")
         val KEY_LOCAL_TREE_URI = stringPreferencesKey("local_tree_uri")

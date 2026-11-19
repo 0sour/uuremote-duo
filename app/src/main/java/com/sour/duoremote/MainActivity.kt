@@ -14,6 +14,8 @@ import android.util.Rational
 import android.view.Display
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.view.Window
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
@@ -330,7 +332,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                LaunchedEffect(duoSettings.screenBrightness) {
+                    applyScreenBrightness()
+                }
+
                 LaunchedEffect(route, sessionController?.videoTrack) {
+                    updateKeepScreenOn()
                     if ((route == AppRoute.ControlCenter || route == AppRoute.Files) &&
                         sessionController?.videoTrack == null
                     ) {
@@ -1916,6 +1923,36 @@ class MainActivity : ComponentActivity() {
         }
         created.show()
         presentation = created
+        updateKeepScreenOn()
+        applyScreenBrightness()
+    }
+
+    private fun applyScreenBrightness() {
+        val value = if (duoSettings.screenBrightness <= 0) {
+            WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        } else {
+            duoSettings.screenBrightness.coerceIn(1, 100) / 100f
+        }
+        fun apply(target: Window?) {
+            val panel = target ?: return
+            val attributes = panel.attributes
+            if (attributes.screenBrightness != value) {
+                attributes.screenBrightness = value
+                panel.attributes = attributes
+            }
+        }
+        apply(window)
+        apply(presentation?.window)
+    }
+
+    /** Keeps both panels awake only while a remote video track is active. */
+    private fun updateKeepScreenOn() {
+        val keep = sessionController?.videoTrack != null
+        val flag = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+        if (keep) window.addFlags(flag) else window.clearFlags(flag)
+        presentation?.window?.let { panel ->
+            if (keep) panel.addFlags(flag) else panel.clearFlags(flag)
+        }
     }
 
     private fun refreshDisplays() {

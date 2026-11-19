@@ -683,6 +683,17 @@ internal fun settingsRows(
                 },
             ),
             row(
+                "双屏亮度",
+                "同时作用于上下屏；跟随系统不覆盖",
+                if (settings.screenBrightness <= 0) "跟随系统" else "${settings.screenBrightness}%",
+                adjust = { delta ->
+                    val values = listOf(0, 30, 50, 70, 100)
+                    val index = values.indexOf(settings.screenBrightness).coerceAtLeast(0)
+                    val step = if (delta == 0) 1 else delta
+                    onChange(settings.copy(screenBrightness = values[(index + step + values.size) % values.size]))
+                },
+            ),
+            row(
                 "设备排序",
                 "主页与设备管理页的列表顺序",
                 DeviceSort.fromStorage(settings.deviceSort).label,
