@@ -52,7 +52,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 版本 | `0.3.0`（development，versionCode 3） |
 | 主要验证设备 | Retroid Pocket Duo（双屏 1920×1080 + 1280×960，Android 掌机） |
 | 单屏模式 | 上屏 Activity / 下屏 Presentation 均可作为唯一屏 |
-| 自动测试 | 106 个 JVM 单测通过 |
+| 自动测试 | 109 个 JVM 单测通过 |
 | 构建 | debug / R8 release（默认未签名）通过；lint 通过 |
 | 发布 | **没有 GitHub Release，没有随仓库分发的 APK** |
 | 网络验收 | 1080p60 / 720p30、控制中心重连、仅观看、fit/fill 缩放、文件传输与文件夹上下传已真机验证 |
@@ -65,7 +65,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 模块 | 内容 |
 | --- | --- |
 | 登录 | 扫码登录、短信登录、token 持久化；登录页支持单屏二维码 |
-| 设备 | 设备列表、在线状态、手动刷新、连接偏好摘要；设备管理页支持重命名、重启、从账号移除（带确认） |
+| 设备 | 设备列表、在线状态、手动刷新、连接偏好摘要；设备管理页支持重命名、重启、从账号移除（带确认）；支持在线优先/按名称/最近连接排序 |
 | 串流 | 加入房间、信令、control、WebRTC H.264/Opus；1080p60 / 720p30 |
 | 双屏 | 上屏 Activity 只读视频/摘要；下屏 Presentation 承载完整 UI |
 | 单屏 | 上屏或下屏作为唯一宿主；设置、账号、控制中心、本地菜单均有单屏布局 |
@@ -120,7 +120,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 实时 | `io.github.webrtc-sdk:android:125.6422.07`（H.264 / Opus） |
 | 存储 | DataStore Preferences；EncryptedSharedPreferences / Android Keystore 保存敏感材料 |
 | 二维码 | ZXing core `3.5.3` |
-| 测试 | JUnit 4，MockWebServer；106 个 JVM 单测 |
+| 测试 | JUnit 4，MockWebServer；109 个 JVM 单测 |
 | CI | GitHub Actions：单测 + debug APK artifact；**不创建 Release** |
 
 ## 架构

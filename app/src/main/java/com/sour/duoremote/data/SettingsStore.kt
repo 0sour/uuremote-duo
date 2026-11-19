@@ -49,6 +49,10 @@ data class DuoSettings(
     val diagnostics: Boolean = false,
     /** Enter Android picture-in-picture when a single-screen stream is backgrounded. */
     val pipOnBackground: Boolean = true,
+    /** Home/device-manager ordering: online / name / recent. */
+    val deviceSort: String = "online",
+    /** Comma-separated recent device ids, newest first. */
+    val recentDeviceIds: String = "",
     /** Persisted SAF tree URI for the optional, one-time local folder grant. */
     val localTreeUri: String = "",
 )
@@ -91,6 +95,8 @@ class SettingsStore(private val context: Context) {
                 focusRingStyle = prefs[KEY_FOCUS_RING] ?: "white",
                 diagnostics = prefs[KEY_DIAGNOSTICS] ?: false,
                 pipOnBackground = prefs[KEY_PIP_ON_BACKGROUND] ?: true,
+                deviceSort = prefs[KEY_DEVICE_SORT] ?: "online",
+                recentDeviceIds = prefs[KEY_RECENT_DEVICE_IDS].orEmpty(),
                 localTreeUri = prefs[KEY_LOCAL_TREE_URI].orEmpty(),
             )
         }
@@ -125,6 +131,8 @@ class SettingsStore(private val context: Context) {
             prefs[KEY_FOCUS_RING] = settings.focusRingStyle
             prefs[KEY_DIAGNOSTICS] = settings.diagnostics
             prefs[KEY_PIP_ON_BACKGROUND] = settings.pipOnBackground
+            prefs[KEY_DEVICE_SORT] = settings.deviceSort
+            prefs[KEY_RECENT_DEVICE_IDS] = settings.recentDeviceIds
             prefs[KEY_LOCAL_TREE_URI] = settings.localTreeUri
         }
     }
@@ -202,6 +210,8 @@ class SettingsStore(private val context: Context) {
         val KEY_FOCUS_RING = stringPreferencesKey("focus_ring")
         val KEY_DIAGNOSTICS = booleanPreferencesKey("diagnostics")
         val KEY_PIP_ON_BACKGROUND = booleanPreferencesKey("pip_on_background")
+        val KEY_DEVICE_SORT = stringPreferencesKey("device_sort")
+        val KEY_RECENT_DEVICE_IDS = stringPreferencesKey("recent_device_ids")
         val KEY_LOCAL_TREE_URI = stringPreferencesKey("local_tree_uri")
     }
 }

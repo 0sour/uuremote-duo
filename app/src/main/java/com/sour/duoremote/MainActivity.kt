@@ -76,6 +76,8 @@ import com.sour.duoremote.ui.files.LocalRootKind
 import com.sour.duoremote.ui.files.PendingDownload
 import com.sour.duoremote.ui.home.BlackHost
 import com.sour.duoremote.ui.home.DemoDevice
+import com.sour.duoremote.ui.home.DeviceSort
+import com.sour.duoremote.ui.home.sortDevices
 import com.sour.duoremote.ui.home.DualBottomScreen
 import com.sour.duoremote.ui.home.EmptyDevice
 import com.sour.duoremote.ui.home.HomeFocus
@@ -197,6 +199,13 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             settingsStore.settings.collect { saved ->
                 duoSettings = saved
+                if (devices.isNotEmpty()) {
+                    devices = sortDevices(
+                        devices,
+                        DeviceSort.fromStorage(saved.deviceSort),
+                        saved.recentDeviceIds,
+                    )
+                }
                 host.screenMode = saved.screenMode
                 host.singleHost = saved.singleHost
                 inputRouter.style = saved.gamepadStyle
@@ -1241,7 +1250,20 @@ class MainActivity : ComponentActivity() {
         if (!started) filesUi.error = client.fileState.error ?: "无法开始下载"
     }
 
+    private fun rememberRecentDevice(id: String) {
+        val recent = (listOf(id) + duoSettings.recentDeviceIds.split(','))
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .take(8)
+            .joinToString(",")
+        if (recent != duoSettings.recentDeviceIds) {
+            updateSettings(duoSettings.copy(recentDeviceIds = recent))
+        }
+    }
+
     private fun connectSession(device: DemoDevice) {
+        rememberRecentDevice(device.id)
         activeDeviceId = device.id
         activeDeviceName = device.name
         route = AppRoute.Home
@@ -1596,6 +1618,13 @@ class MainActivity : ComponentActivity() {
             },
         )
         duoSettings = resolved
+        if (devices.isNotEmpty()) {
+            devices = sortDevices(
+                devices,
+                DeviceSort.fromStorage(resolved.deviceSort),
+                resolved.recentDeviceIds,
+            )
+        }
         if (resolved.audio != previous.audio) {
             sessionController?.setAudioPlayout(resolved.audio && !streamingUi.muted)
         }
@@ -1661,7 +1690,11 @@ class MainActivity : ComponentActivity() {
         deviceError = null
         try {
             val remote = withContext(Dispatchers.IO) { client.getDevices() }
-            devices = remote.map { it.toUi() }
+            devices = sortDevices(
+                remote.map { it.toUi() },
+                DeviceSort.fromStorage(duoSettings.deviceSort),
+                duoSettings.recentDeviceIds,
+            )
         } catch (e: Exception) {
             deviceError = ErrorText.friendly(e, "设备列表获取失败")
         } finally {

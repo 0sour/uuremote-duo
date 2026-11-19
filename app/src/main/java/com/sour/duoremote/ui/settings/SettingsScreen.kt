@@ -63,6 +63,7 @@ import com.sour.duoremote.ui.components.DuoTabBar
 import com.sour.duoremote.ui.home.DuoBrandMark
 import com.sour.duoremote.ui.host.ScreenMode
 import com.sour.duoremote.ui.host.SingleHost
+import com.sour.duoremote.ui.home.DeviceSort
 import com.sour.duoremote.ui.input.GamepadEmulationMode
 import com.sour.duoremote.ui.input.GamepadStyle
 import com.sour.duoremote.ui.theme.DuoRadius
@@ -679,6 +680,21 @@ internal fun settingsRows(
                 if (settings.pipOnBackground) "开" else "关",
                 adjust = boolToggle(settings.pipOnBackground) {
                     onChange(settings.copy(pipOnBackground = it))
+                },
+            ),
+            row(
+                "设备排序",
+                "主页与设备管理页的列表顺序",
+                DeviceSort.fromStorage(settings.deviceSort).label,
+                adjust = { delta ->
+                    val values = DeviceSort.entries
+                    val current = DeviceSort.fromStorage(settings.deviceSort)
+                    val step = if (delta == 0) 1 else delta
+                    onChange(
+                        settings.copy(
+                            deviceSort = values[(current.ordinal + step + values.size) % values.size].storage,
+                        ),
+                    )
                 },
             ),
         )
