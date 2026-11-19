@@ -172,10 +172,15 @@ fun LocalPickerScreen(
                                 "上传到 ${state.remoteDir.ifBlank { "当前远端目录" }}"
 
                         LocalPickerMode.DOWNLOAD ->
-                            if (state.pendingDownloads.size > 1) {
-                                "保存 ${state.pendingDownloads.size} 个文件到此文件夹"
-                            } else {
-                                "保存“${state.pendingDownload?.name ?: "文件"}”到此文件夹"
+                            when {
+                                state.pendingDownload?.isFolder == true ->
+                                    "保存文件夹“${state.pendingDownload?.name ?: "文件夹"}”到此位置"
+
+                                state.pendingDownloads.size > 1 ->
+                                    "保存 ${state.pendingDownloads.size} 个文件到此文件夹"
+
+                                else ->
+                                    "保存“${state.pendingDownload?.name ?: "文件"}”到此文件夹"
                             }
                     },
                     tone = BannerTone.Info,

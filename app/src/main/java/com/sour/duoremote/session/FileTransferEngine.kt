@@ -76,6 +76,7 @@ class FileTransferEngine(
     private var pendingListId: Int? = null
     private var upload: UploadSession? = null
     private var download: DownloadSession? = null
+    private var folderDownload: FolderDownloadSession? = null
     private var listStartedAt = 0L
     private var lastActivityAt = 0L
 
@@ -231,6 +232,57 @@ class FileTransferEngine(
         return sent
     }
 
+    /**
+     * Downloads a remote directory. The host scans it and returns a manifest with relative
+     * paths; each file then arrives through the normal Ask/Block/Complete sequence. The local
+     * output factory is called lazily for each manifest entry.
+     */
+    @Synchronized
+    fun downloadFolder(
+        folderPath: String,
+        folderName: String,
+        outputFactory: (Int, FileInfo) -> OutputStream?,
+    ): Boolean {
+        if (state.transfer?.status in ACTIVE_STATUSES) {
+            publish(state.copy(error = "请先等待当前传输结束"))
+            return false
+        }
+        if (folderPath.isBlank() || folderName.isBlank()) {
+            publish(state.copy(error = "远端文件夹路径无效"))
+            return false
+        }
+        val id = nextTaskId()
+        folderDownload = FolderDownloadSession(
+            id = id,
+            folderName = folderName,
+            outputFactory = outputFactory,
+        )
+        publish(
+            state.copy(
+                transfer = ActiveTransfer(
+                    id = id,
+                    name = folderName,
+                    kind = TransferKind.DOWNLOAD,
+                    total = 0L,
+                    done = 0L,
+                    status = TransferStatus.PREPARING,
+                    message = "正在扫描文件夹",
+                ),
+                error = null,
+                notice = null,
+            ),
+        )
+        val sent = sendRequest(
+            FileRequest.Send(
+                id = TaskId(id, 0),
+                path = folderPath,
+                listData = ByteArray(0),
+            ),
+        )
+        if (!sent) failFolderDownload("文件通道未就绪")
+        return sent
+    }
+
     @Synchronized
     fun cancel() {
         val active = state.transfer ?: return
@@ -241,6 +293,7 @@ class FileTransferEngine(
         }
         closeUpload()
         closeDownload()
+        closeFolderDownload()
         publish(
             state.copy(
                 transfer = active.copy(status = TransferStatus.CANCELED, message = "已取消"),
@@ -253,6 +306,7 @@ class FileTransferEngine(
     fun reset() {
         closeUpload()
         closeDownload()
+        closeFolderDownload()
         pendingListId = null
         publish(FileTransferState())
     }
@@ -287,6 +341,16 @@ class FileTransferEngine(
                     ),
                 )
                 failDownload("传输超时")
+            }
+
+            folderDownload != null -> {
+                sendRequest(
+                    FileRequest.Complete(
+                        TaskId(id, -1),
+                        FileTransferCodec.FILE_TRANSFER_ERROR_CANCELED,
+                    ),
+                )
+                failFolderDownload("传输超时")
             }
         }
     }
@@ -375,6 +439,53 @@ class FileTransferEngine(
             }
 
             is FileResponse.SendResponse -> {
+                val folder = folderDownload
+                if (folder != null && response.id.taskId == folder.id) {
+                    if (response.err != FileTransferCodec.FILE_TRANSFER_ERROR_OK) {
+                        failFolderDownload("远端拒绝发送文件夹（${response.err}）")
+                        return
+                    }
+                    val files = runCatching {
+                        if (response.listData.isNotEmpty()) {
+                            FileTransferCodec.decodeFileList(
+                                FileTransferCodec.decompress(response.listData),
+                            )
+                        } else {
+                            response.files
+                        }
+                    }.getOrElse {
+                        failFolderDownload("远端文件夹清单无效")
+                        return
+                    }
+                    if (files.isEmpty()) {
+                        closeFolderDownload()
+                        publish(
+                            state.copy(
+                                transfer = state.transfer?.copy(
+                                    status = TransferStatus.COMPLETED,
+                                    message = "文件夹为空",
+                                ),
+                                notice = "文件夹为空",
+                            ),
+                        )
+                        return
+                    }
+                    folder.files = files
+                    folder.total = files.sumOf { it.size.coerceAtLeast(0L) }
+                    folder.name = response.folderName.ifBlank { folder.folderName }
+                    publish(
+                        state.copy(
+                            transfer = state.transfer?.copy(
+                                name = folder.name,
+                                total = folder.total,
+                                status = TransferStatus.WAITING,
+                                message = "等待远端数据",
+                            ),
+                            error = null,
+                        ),
+                    )
+                    return
+                }
                 val session = download ?: return
                 if (response.id.taskId != session.id) return
                 if (response.err != FileTransferCodec.FILE_TRANSFER_ERROR_OK) {
@@ -406,6 +517,49 @@ class FileTransferEngine(
         lastActivityAt = now()
         when (request) {
             is FileRequest.Ask -> {
+                val folder = folderDownload
+                if (folder != null && request.id.taskId == folder.id) {
+                    val index = request.id.fileIndex
+                    val info = folder.files.getOrNull(index - 1)
+                    if (info == null || index <= 0) {
+                        failFolderDownload("远端文件序号无效")
+                        return
+                    }
+                    if (folder.output != null) {
+                        failFolderDownload("远端文件顺序无效")
+                        return
+                    }
+                    val output = runCatching { folder.outputFactory(index, info) }.getOrNull()
+                    if (output == null) {
+                        failFolderDownload("无法创建 ${info.relPath}")
+                        return
+                    }
+                    folder.currentIndex = index
+                    folder.current = info
+                    folder.output = output
+                    folder.currentOffset = 0L
+                    folder.currentTotal = if (request.fileSize > 0L) request.fileSize else info.size
+                    folder.nextBlock = 1
+                    val sent = sendResponse(
+                        requestId,
+                        FileResponse.Confirm(
+                            id = request.id,
+                            skip = false,
+                            err = FileTransferCodec.FILE_TRANSFER_ERROR_OK,
+                            resumePoint = 0L,
+                        ),
+                    )
+                    if (sent) {
+                        updateTransfer(
+                            TransferStatus.TRANSFERRING,
+                            folder.done,
+                            "下载 ${info.relPath}",
+                        )
+                    } else {
+                        failFolderDownload("文件通道未就绪")
+                    }
+                    return
+                }
                 val session = download ?: return
                 if (request.id.taskId != session.id) return
                 if (request.fileSize > 0L) session.total = request.fileSize
@@ -423,6 +577,53 @@ class FileTransferEngine(
             }
 
             is FileRequest.Block -> {
+                val folder = folderDownload
+                if (folder != null && request.id.taskId == folder.id) {
+                    val output = folder.output
+                    val valid = output != null &&
+                        request.blockId == folder.nextBlock &&
+                        request.data.size <= MAX_BLOCK_BYTES &&
+                        (folder.currentTotal <= 0L ||
+                            folder.currentOffset + request.data.size <= folder.currentTotal)
+                    if (!valid) {
+                        sendResponse(
+                            requestId,
+                            FileResponse.BlockConfirm(
+                                id = request.id,
+                                blockId = request.blockId,
+                                err = FileTransferCodec.FILE_TRANSFER_ERROR_CANCELED,
+                                blockLen = 0,
+                            ),
+                        )
+                        failFolderDownload("远端文件块顺序或大小无效")
+                        return
+                    }
+                    val written = runCatching {
+                        output!!.write(request.data)
+                        output.flush()
+                    }.isSuccess
+                    if (!written) {
+                        failFolderDownload("写入本地文件失败")
+                        return
+                    }
+                    folder.currentOffset += request.data.size
+                    folder.nextBlock += 1
+                    updateTransfer(
+                        TransferStatus.TRANSFERRING,
+                        folder.done + folder.currentOffset,
+                        "下载 ${folder.current?.relPath ?: folder.name}",
+                    )
+                    sendResponse(
+                        requestId,
+                        FileResponse.BlockConfirm(
+                            id = request.id,
+                            blockId = request.blockId,
+                            err = FileTransferCodec.FILE_TRANSFER_ERROR_OK,
+                            blockLen = request.data.size,
+                        ),
+                    )
+                    return
+                }
                 val session = download ?: return
                 if (request.id.taskId != session.id) return
                 val valid = request.blockId == session.nextBlock &&
@@ -464,6 +665,60 @@ class FileTransferEngine(
             }
 
             is FileRequest.Complete -> {
+                val folder = folderDownload
+                if (folder != null && request.id.taskId == folder.id) {
+                    if (request.error != FileTransferCodec.FILE_TRANSFER_ERROR_OK) {
+                        failFolderDownload("远端已取消下载")
+                        return
+                    }
+                    if (request.id.fileIndex == -1) {
+                        closeFolderDownload()
+                        val total = folder.total.coerceAtLeast(folder.done)
+                        publish(
+                            state.copy(
+                                transfer = state.transfer?.copy(
+                                    done = total,
+                                    total = total,
+                                    status = TransferStatus.COMPLETED,
+                                    message = "已完成",
+                                ),
+                                notice = "已下载文件夹 ${folder.name}",
+                            ),
+                        )
+                        sendResponse(
+                            requestId,
+                            FileResponse.Result(
+                                id = request.id,
+                                fileError = FileTransferCodec.FILE_TRANSFER_ERROR_OK,
+                                errMsg = "",
+                            ),
+                        )
+                        return
+                    }
+                    if (folder.currentIndex != request.id.fileIndex) {
+                        failFolderDownload("远端文件完成序号无效")
+                        return
+                    }
+                    folder.output?.let { runCatching { it.close() } }
+                    folder.output = null
+                    folder.current = null
+                    folder.done += folder.currentOffset
+                    folder.currentOffset = 0L
+                    updateTransfer(
+                        TransferStatus.WAITING,
+                        folder.done,
+                        "等待下一个文件",
+                    )
+                    sendResponse(
+                        requestId,
+                        FileResponse.Result(
+                            id = request.id,
+                            fileError = FileTransferCodec.FILE_TRANSFER_ERROR_OK,
+                            errMsg = "",
+                        ),
+                    )
+                    return
+                }
                 val session = download ?: return
                 if (request.id.taskId != session.id) return
                 if (request.error != FileTransferCodec.FILE_TRANSFER_ERROR_OK) {
@@ -700,6 +955,16 @@ class FileTransferEngine(
         download = null
     }
 
+    private fun closeFolderDownload() {
+        folderDownload?.output?.let { runCatching { it.close() } }
+        folderDownload = null
+    }
+
+    private fun failFolderDownload(message: String) {
+        closeFolderDownload()
+        failTransfer(message)
+    }
+
     private data class UploadSession(
         val id: Int,
         val name: String,
@@ -716,6 +981,22 @@ class FileTransferEngine(
         var total: Long,
         val output: OutputStream,
         var offset: Long = 0L,
+        var nextBlock: Int = 1,
+    )
+
+    private data class FolderDownloadSession(
+        val id: Int,
+        val folderName: String,
+        val outputFactory: (Int, FileInfo) -> OutputStream?,
+        var name: String = folderName,
+        var files: List<FileInfo> = emptyList(),
+        var total: Long = 0L,
+        var done: Long = 0L,
+        var currentIndex: Int = 0,
+        var current: FileInfo? = null,
+        var output: OutputStream? = null,
+        var currentOffset: Long = 0L,
+        var currentTotal: Long = 0L,
         var nextBlock: Int = 1,
     )
 

@@ -199,6 +199,61 @@ class FileTransferEngineTest {
     }
 
     @Test
+    fun folderDownloadStreamsEachManifestFile() {
+        val sent = mutableListOf<ByteArray>()
+        val outputs = mutableMapOf<Int, ByteArrayOutputStream>()
+        val engine = FileTransferEngine(send = { sent += it; true }, now = { 1L })
+
+        assertTrue(
+            engine.downloadFolder("C:\\folder", "folder") { index, _ ->
+                ByteArrayOutputStream().also { outputs[index] = it }
+            },
+        )
+        val send = lastRequest(sent) as FileRequest.Send
+        val taskId = send.id.taskId
+        assertEquals("C:\\folder", send.path)
+        assertTrue(send.listData.isEmpty())
+
+        val files = listOf(
+            FileInfo("a.txt", 3),
+            FileInfo("sub/b.txt", 2),
+        )
+        engine.onMessage(
+            response(
+                FileResponse.SendResponse(
+                    id = TaskId(taskId),
+                    err = 1,
+                    files = files,
+                    folderName = "folder",
+                    listData = ByteArray(0),
+                ),
+            ),
+        )
+        assertEquals(5L, engine.state.transfer?.total)
+
+        engine.onMessage(hostRequest(FileRequest.Ask(TaskId(taskId, 1), 0, 3), 101))
+        val confirm = lastResponse(sent).response as FileResponse.Confirm
+        assertEquals(false, confirm.skip)
+
+        engine.onMessage(
+            hostRequest(FileRequest.Block(TaskId(taskId, 1), 1, "abc".toByteArray()), 102),
+        )
+        engine.onMessage(hostRequest(FileRequest.Complete(TaskId(taskId, 1), 1), 103))
+
+        engine.onMessage(hostRequest(FileRequest.Ask(TaskId(taskId, 2), 0, 2), 104))
+        engine.onMessage(
+            hostRequest(FileRequest.Block(TaskId(taskId, 2), 1, "de".toByteArray()), 105),
+        )
+        engine.onMessage(hostRequest(FileRequest.Complete(TaskId(taskId, 2), 1), 106))
+        engine.onMessage(hostRequest(FileRequest.Complete(TaskId(taskId, -1), 1), 107))
+
+        assertEquals("abc", outputs[1]?.toString(Charsets.UTF_8))
+        assertEquals("de", outputs[2]?.toString(Charsets.UTF_8))
+        assertEquals(TransferStatus.COMPLETED, engine.state.transfer?.status)
+        assertEquals(5L, engine.state.transfer?.done)
+    }
+
+    @Test
     fun sendFailureSurfacesError() {
         val engine = FileTransferEngine(send = { false }, now = { 1L })
         assertEquals(false, engine.list("C:\\"))

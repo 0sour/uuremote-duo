@@ -1,7 +1,8 @@
 # 文件传输（MVP）
 
-> 状态：协议、状态机、单测与 RP Duo + Windows 电脑端的目录浏览/单文件上下传已验收。
-> 范围：远端目录浏览、单文件上传、单文件下载。文件夹批量、拖放、剪贴板文件、下载断点续传不在本版。
+> 状态：协议、状态机、单测与 RP Duo + Windows 电脑端的目录浏览、单/多文件上下传、文件夹下载已验收。
+> 范围：远端目录浏览、单/多文件上传、单/多文件下载、文件夹递归下载。文件夹上传、拖放、
+> 剪贴板文件、下载断点续传不在本版。
 >
 > 本机文件选择已改为 **app 内自建浏览页**：应用专属传输目录无需权限，另可选一次授权一个
 > 本机文件夹；之后每次上传/下载都不再启动系统文件管理器。
@@ -120,7 +121,7 @@ sequenceDiagram
 
 - 下载块序号从 **1** 开始；上传块序号从 **0** 开始。
 - 写入目标由 app 内本机文件页选择；失败/取消时尽量删除未完成的空文件，已写入的部分文件可能保留。
-- 下载续传、暂停、文件夹递归未实现。
+- 下载续传、暂停未实现；文件夹下载见下节。
 
 ## 多文件批量
 
@@ -132,6 +133,39 @@ sequenceDiagram
 - 上传文件在轮到它时才打开流；下载目标在轮到它时才创建，避免一次占用大量文件描述符。
 - 任一文件失败会停止整个队列并保留错误；已完成的文件不会回滚。下载重名按
   `name (1).ext` 生成新文件。
+
+## 文件夹下载
+
+```mermaid
+sequenceDiagram
+  participant D as DuoRemote
+  participant P as 被控 PC
+  D->>P: SendRequest(path=文件夹路径, list_data=empty)
+  P-->>D: SendResponse(files/folder_name/list_data+task_id)
+  loop 清单中的每个文件
+    P->>D: FileAsk(file_index=1..N, file_size)
+    D-->>P: FileConfirm(resume_point=0)
+    loop 文件块
+      P->>D: FileBlock(block_id 从 1, data)
+      D-->>P: BlockConfirm
+    end
+    P->>D: Complete(file_index)
+    D-->>P: Result(file_error=1)
+  end
+  P->>D: Complete(file_index=-1)
+  D-->>P: Result(file_error=1)
+```
+
+- 请求 `SendRequest` 的 `path` 是文件夹完整路径，`list_data` 为空；host 扫描目录后返回
+  `SendResponse`，清单可能放在 `files` 字段，也可能放在 zlib 压缩的 `list_data`。
+- 清单里的相对路径（如 `sub/b.txt`）逐级落到本机目标文件夹；子目录在轮到该文件时才创建。
+- 应用目录用 `File.mkdirs()`；一次性授权文件夹用 `DocumentsContract.createDocument` 逐级
+  建目录，再创建文件。应用目录内的文件夹下载已在 RP Duo 真机验收；授权 SAF 目录内的
+  子目录创建尚未真机验证。
+- 同名文件/文件夹自动改为 `name (1)`。空文件夹会立即完成并提示“文件夹为空”。
+- 传输中失败会关闭当前文件，但已经写入的部分文件会保留；需要时手动删除目标文件夹。
+- `FileTransferEngine.downloadFolder` 一次只处理一个文件夹；仍受“单任务”限制，批量文件
+  下载和文件夹下载不能同时进行。
 
 ## 本机文件（app 内浏览）
 
@@ -175,10 +209,12 @@ sequenceDiagram
 覆盖：
 
 - `FileTransferCodecTest`：Main/RPC 包络、目录/文件列表、zlib、块确认、feature flags。
-- `FileTransferEngineTest`：目录排序、上传逐块确认与双 Complete、下载块/回执 request_id、超时、路径边界。
+- `FileTransferEngineTest`：目录排序、上传逐块确认与双 Complete、下载块/回执 request_id、文件夹清单/逐文件写入、超时、路径边界。
 - `LocalFilesUiStateTest`：本机页打开/根切换、进入/上一级、选择、过期目录结果丢弃、授权提示。
 
 2026-11-19 RP Duo + Windows 电脑端实测：`C:\` 与 `C:\Users\Public` 目录浏览；应用目录
 上传/下载 27 B 文件；一次授权 `Documents/DuoRemoteTest` 后，从授权文件夹上传及下载到该文件夹
-均为 27 B；重名自动改为 `grant-test (1).txt`；授权页关闭后串流保持连接。尚未实测 >100 MB
-文件、取消/失败清理和 15/30 秒超时。真机验收项见 [v1-checklist.md](v1-checklist.md) 第 9 节。
+均为 27 B；重名自动改为 `grant-test (1).txt`；授权页关闭后串流保持连接。文件夹下载验收：
+远端 `duo-folder-test`（`a.txt` 16 B、`sub/b.txt` 20 B）下载到应用目录，目录结构与内容一致。
+尚未实测 >100 MB 文件、取消/失败清理、15/30 秒超时和授权 SAF 目录的文件夹下载。真机验收项见
+[v1-checklist.md](v1-checklist.md) 第 9 节。

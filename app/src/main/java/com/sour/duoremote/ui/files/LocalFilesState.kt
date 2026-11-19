@@ -40,6 +40,7 @@ data class PendingDownload(
     val name: String,
     val remotePath: String,
     val size: Long,
+    val isFolder: Boolean = false,
 )
 
 /**

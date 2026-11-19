@@ -74,6 +74,7 @@ fun FilesScreen(
     onClose: () -> Unit,
     onUpload: () -> Unit,
     onDownload: (List<FileEntry>) -> Unit,
+    onDownloadFolder: (FileEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalDuoColors.current
@@ -139,8 +140,12 @@ fun FilesScreen(
                             DuoAction("刷新"),
                             DuoAction("上传", primary = true),
                             DuoAction(
-                                if (markedCount > 0) "下载已选 $markedCount 个" else "下载",
-                                enabled = markedCount > 0 || (selected != null && !selected.isDirectory),
+                                when {
+                                    markedCount > 0 -> "下载已选 $markedCount 个"
+                                    selected?.isDirectory == true -> "下载此文件夹"
+                                    else -> "下载"
+                                },
+                                enabled = markedCount > 0 || selected != null,
                             ),
                         ),
                         onAction = { index ->
@@ -152,7 +157,7 @@ fun FilesScreen(
                                 3 -> when {
                                     markedCount > 0 -> onDownload(ui.markedEntries)
                                     selected == null -> ui.error = "请选择一个文件"
-                                    selected.isDirectory -> ui.error = "文件夹下载暂未支持"
+                                    selected.isDirectory -> onDownloadFolder(selected)
                                     else -> onDownload(listOf(selected))
                                 }
                             }
@@ -169,6 +174,7 @@ fun FilesScreen(
                         onSelect = ui::select,
                         onOpen = ::open,
                         onToggleMark = ui::toggleMarked,
+                        onDownloadFolder = onDownloadFolder,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -194,6 +200,7 @@ private fun FileList(
     onSelect: (Int) -> Unit,
     onOpen: (String) -> Unit,
     onToggleMark: (FileEntry) -> Unit,
+    onDownloadFolder: (FileEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalDuoColors.current
@@ -280,7 +287,25 @@ private fun FileList(
                         color = colors.textTertiary,
                         maxLines = 1,
                     )
-                    if (!entry.isDirectory) {
+                    if (entry.isDirectory) {
+                        Spacer(Modifier.width(6.dp))
+                        Box(
+                            Modifier
+                                .size(26.dp)
+                                .clickable {
+                                    onSelect(index)
+                                    onDownloadFolder(entry)
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Outlined.Download,
+                                contentDescription = "下载此文件夹",
+                                tint = colors.textTertiary,
+                                modifier = Modifier.size(17.dp),
+                            )
+                        }
+                    } else {
                         Spacer(Modifier.width(6.dp))
                         val marked = isMarked(entry)
                         Box(

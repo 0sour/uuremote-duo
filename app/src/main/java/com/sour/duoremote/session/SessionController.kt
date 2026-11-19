@@ -17,6 +17,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.sour.duoremote.protocol.api.UuApiClient
 import com.sour.duoremote.protocol.file.FileTransferCodec
+import com.sour.duoremote.protocol.file.FileInfo
 import com.sour.duoremote.protocol.proto.ConnectOptions
 import com.sour.duoremote.protocol.proto.ClipboardCodec
 import com.sour.duoremote.protocol.proto.FeatureFlags
@@ -421,6 +422,23 @@ class SessionController(
         batchCursor = 0
         startNextDownload()
         return true
+    }
+
+    /**
+     * Downloads a remote folder. [openOutput] receives the manifest index (1-based) and the
+     * relative file info and must return a writable local file.
+     */
+    fun downloadFolder(
+        folderPath: String,
+        folderName: String,
+        openOutput: (Int, FileInfo) -> OutputStream?,
+    ): Boolean {
+        if (viewOnly) return false
+        if (hasActiveTransfer() || uploadBatch != null || downloadBatch != null) {
+            fileState = fileState.copy(error = "请先等待当前传输结束")
+            return false
+        }
+        return fileTransfer.downloadFolder(folderPath, folderName, openOutput)
     }
 
     fun cancelFileTransfer() {

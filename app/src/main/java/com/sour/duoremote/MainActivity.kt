@@ -591,6 +591,7 @@ class MainActivity : ComponentActivity() {
                 onClose = ::closeFiles,
                 onUpload = ::openLocalUpload,
                 onDownload = ::openLocalDownload,
+                onDownloadFolder = ::openLocalFolderDownload,
                 modifier = modifier,
             )
         }
@@ -977,6 +978,33 @@ class MainActivity : ComponentActivity() {
         if (authorizedTreeUri() != null) showAuthorizedRoot() else showAppRoot()
     }
 
+    private fun openLocalFolderDownload(entry: FileEntry) {
+        val client = sessionController ?: return
+        if (duoSettings.viewOnly) return
+        if (!entry.isDirectory) {
+            openLocalDownload(listOf(entry))
+            return
+        }
+        val remotePath = entry.fullPath.ifBlank {
+            FileTransferState.childOf(client.fileState.path, entry.name)
+        }
+        filesUi.error = null
+        localFilesUi.open(
+            mode = LocalPickerMode.DOWNLOAD,
+            remoteDir = client.fileState.path,
+            pending = listOf(
+                PendingDownload(
+                    name = entry.name,
+                    remotePath = remotePath,
+                    size = -1L,
+                    isFolder = true,
+                ),
+            ),
+        )
+        filesUi.clearMarked()
+        if (authorizedTreeUri() != null) showAuthorizedRoot() else showAppRoot()
+    }
+
     private fun confirmLocalPicker() {
         when (localFilesUi.mode) {
             LocalPickerMode.UPLOAD -> confirmLocalUpload()
@@ -1033,6 +1061,28 @@ class MainActivity : ComponentActivity() {
         val location = localFilesUi.current
         if (location == null) {
             localFilesUi.reportError("请选择保存文件夹")
+            return
+        }
+        val folder = pending.singleOrNull()?.takeIf { it.isFolder }
+        if (folder != null) {
+            val writer = LocalFileAccess.createFolderWriter(this, location, folder.name)
+            if (writer == null) {
+                localFilesUi.reportError("无法创建目标文件夹")
+                return
+            }
+            localFilesUi.close()
+            filesUi.error = null
+            filesUi.tab = FilesTab.QUEUE
+            val started = client.downloadFolder(
+                folderPath = folder.remotePath,
+                folderName = folder.name,
+            ) { _, info ->
+                writer.open(info.relPath)?.stream
+            }
+            if (!started) {
+                writer.deleteRoot()
+                filesUi.error = client.fileState.error ?: "无法开始下载文件夹"
+            }
             return
         }
         val sources = pending.map { item ->
@@ -2130,7 +2180,7 @@ class MainActivity : ComponentActivity() {
                 when {
                     filesUi.markedEntries.isNotEmpty() -> openLocalDownload(filesUi.markedEntries)
                     entry == null -> filesUi.error = "请选择一个文件"
-                    entry.isDirectory -> filesUi.error = "文件夹下载暂未支持"
+                    entry.isDirectory -> openLocalFolderDownload(entry)
                     else -> openLocalDownload(listOf(entry))
                 }
                 true

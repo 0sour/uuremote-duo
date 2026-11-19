@@ -219,7 +219,7 @@ object LocalFileAccess {
         }
     }
 
-    private fun uniqueName(existing: Set<String>, requestedName: String): String {
+    internal fun uniqueName(existing: Set<String>, requestedName: String): String {
         if (requestedName !in existing) return requestedName
         val dot = requestedName.lastIndexOf('.')
         val base = if (dot > 0) requestedName.substring(0, dot) else requestedName
@@ -229,10 +229,232 @@ object LocalFileAccess {
         return "$base ($counter)$extension"
     }
 
-    private fun mimeFor(name: String): String {
+    internal fun mimeFor(name: String): String {
         val extension = name.substringAfterLast('.', "").lowercase()
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: MIME_FALLBACK
     }
+
+    /**
+     * Creates the destination folder for a remote-folder download. Files are then opened lazily
+     * with [LocalFolderWriter.open] as the host manifest arrives.
+     */
+    fun createFolderWriter(
+        context: Context,
+        base: LocalLocation,
+        requestedName: String,
+    ): LocalFolderWriter? {
+        val folderName = safeSegment(requestedName.substringAfterLast('/').substringAfterLast('\\'))
+            ?: return null
+        return runCatching {
+            when (base.root) {
+                LocalRootKind.APP -> {
+                    val parent = File(base.path)
+                    if (!parent.isDirectory && !parent.mkdirs()) return null
+                    val name = uniqueName(parent.list()?.toSet().orEmpty(), folderName)
+                    val root = File(parent, name)
+                    if (!root.mkdirs()) return null
+                    LocalFolderWriter.app(root, name)
+                }
+
+                LocalRootKind.AUTHORIZED -> {
+                    val treeUri = Uri.parse(base.treeUri)
+                    val parentId = base.documentId
+                        ?: DocumentsContract.getTreeDocumentId(treeUri)
+                    val parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentId)
+                    val existing = runCatching {
+                        list(context, base).map { it.name }.toSet()
+                    }.getOrDefault(emptySet())
+                    val name = uniqueName(existing, folderName)
+                    val created = DocumentsContract.createDocument(
+                        context.contentResolver,
+                        parentUri,
+                        DocumentsContract.Document.MIME_TYPE_DIR,
+                        name,
+                    ) ?: return null
+                    val docId = DocumentsContract.getDocumentId(created)
+                    LocalFolderWriter.tree(context, treeUri, docId, name)
+                }
+            }
+        }.getOrNull()
+    }
+}
+
+/** Writes one remote folder tree into either the app directory or the authorized SAF tree. */
+class LocalFolderWriter private constructor(
+    val folderName: String,
+    private val appRoot: File?,
+    private val context: Context?,
+    private val treeUri: Uri?,
+    private val rootDocId: String?,
+) {
+
+    fun open(relativePath: String): LocalOutput? {
+        val segments = safePath(relativePath) ?: return null
+        return runCatching {
+            if (appRoot != null) openApp(segments) else openTree(segments)
+        }.getOrNull()
+    }
+
+    fun deleteRoot() {
+        val localRoot = appRoot
+        if (localRoot != null) {
+            runCatching { localRoot.deleteRecursively() }
+            return
+        }
+        val uri = treeUri ?: return
+        val docId = rootDocId ?: return
+        runCatching {
+            DocumentsContract.deleteDocument(
+                context!!.contentResolver,
+                DocumentsContract.buildDocumentUriUsingTree(uri, docId),
+            )
+        }
+    }
+
+    private fun openApp(segments: List<String>): LocalOutput? {
+        val root = appRoot ?: return null
+        var parent = root
+        for (segment in segments.dropLast(1)) {
+            parent = File(parent, segment)
+            if (!parent.isDirectory && !parent.mkdirs()) return null
+        }
+        val name = LocalFileAccess.uniqueName(
+            parent.list()?.toSet().orEmpty(),
+            segments.last(),
+        )
+        val target = File(parent, name)
+        val stream = FileOutputStream(target)
+        return LocalOutput(
+            name = name,
+            stream = stream,
+            delete = {
+                runCatching { stream.close() }
+                runCatching { target.delete() }
+            },
+        )
+    }
+
+    private fun openTree(segments: List<String>): LocalOutput? {
+        val ctx = context ?: return null
+        val tree = treeUri ?: return null
+        var parentId = rootDocId ?: return null
+        for (segment in segments.dropLast(1)) {
+            parentId = findOrCreateDirectory(ctx, tree, parentId, segment) ?: return null
+        }
+        val name = LocalFileAccess.uniqueName(
+            childNames(ctx, tree, parentId),
+            segments.last(),
+        )
+        val parentUri = DocumentsContract.buildDocumentUriUsingTree(tree, parentId)
+        val created = DocumentsContract.createDocument(
+            ctx.contentResolver,
+            parentUri,
+            LocalFileAccess.mimeFor(name),
+            name,
+        ) ?: return null
+        val stream = ctx.contentResolver.openOutputStream(created, "w") ?: run {
+            runCatching { DocumentsContract.deleteDocument(ctx.contentResolver, created) }
+            return null
+        }
+        return LocalOutput(
+            name = name,
+            stream = stream,
+            delete = {
+                runCatching { stream.close() }
+                runCatching { DocumentsContract.deleteDocument(ctx.contentResolver, created) }
+            },
+        )
+    }
+
+    private fun findOrCreateDirectory(
+        context: Context,
+        treeUri: Uri,
+        parentId: String,
+        name: String,
+    ): String? {
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, parentId)
+        context.contentResolver.query(
+            childrenUri,
+            arrayOf(
+                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                DocumentsContract.Document.COLUMN_MIME_TYPE,
+            ),
+            null,
+            null,
+            null,
+        )?.use { cursor ->
+            while (cursor.moveToNext()) {
+                if (cursor.getString(1) == name &&
+                    cursor.getString(2) == DocumentsContract.Document.MIME_TYPE_DIR
+                ) {
+                    return cursor.getString(0)
+                }
+            }
+        }
+        val parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentId)
+        val created = DocumentsContract.createDocument(
+            context.contentResolver,
+            parentUri,
+            DocumentsContract.Document.MIME_TYPE_DIR,
+            name,
+        ) ?: return null
+        return DocumentsContract.getDocumentId(created)
+    }
+
+    private fun childNames(context: Context, treeUri: Uri, parentId: String): Set<String> {
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, parentId)
+        val names = mutableSetOf<String>()
+        context.contentResolver.query(
+            childrenUri,
+            arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME),
+            null,
+            null,
+            null,
+        )?.use { cursor ->
+            while (cursor.moveToNext()) {
+                cursor.getString(0)?.let(names::add)
+            }
+        }
+        return names
+    }
+
+    companion object {
+        internal fun app(root: File, name: String) = LocalFolderWriter(
+            folderName = name,
+            appRoot = root,
+            context = null,
+            treeUri = null,
+            rootDocId = null,
+        )
+
+        internal fun tree(
+            context: Context,
+            treeUri: Uri,
+            rootDocId: String,
+            name: String,
+        ) = LocalFolderWriter(
+            folderName = name,
+            appRoot = null,
+            context = context,
+            treeUri = treeUri,
+            rootDocId = rootDocId,
+        )
+    }
+}
+
+private fun safeSegment(value: String): String? {
+    val name = value.trim()
+    if (name.isEmpty() || name == "." || name == "..") return null
+    if (name.contains('/') || name.contains('\\')) return null
+    return name
+}
+
+private fun safePath(value: String): List<String>? {
+    val parts = value.replace('\\', '/').split('/').filter { it.isNotBlank() }
+    if (parts.isEmpty()) return null
+    val segments = parts.map { safeSegment(it) ?: return null }
+    return segments
 }
 
 data class LocalOutput(
