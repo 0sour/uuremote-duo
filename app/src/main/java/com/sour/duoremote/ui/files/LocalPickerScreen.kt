@@ -22,6 +22,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.InsertDriveFile
+import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Upload
@@ -67,6 +69,7 @@ fun LocalPickerScreen(
     onUp: () -> Unit,
     onRefresh: () -> Unit,
     onSelect: (Int) -> Unit,
+    onToggleMark: (LocalEntry) -> Unit,
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -75,6 +78,7 @@ fun LocalPickerScreen(
     val currentPath = state.stack.joinToString(" / ") { it.label }
     val selectedIndex = state.index.coerceIn(0, maxOf(0, state.entries.size - 1))
     val selected = state.entries.getOrNull(selectedIndex)
+    val markedCount = state.marked.size
 
     BackHandler(onBack = onBack)
     LaunchedEffect(state.entries.size) { state.clamp(state.entries.size) }
@@ -153,18 +157,26 @@ fun LocalPickerScreen(
                         entries = state.entries,
                         selectedIndex = selectedIndex,
                         listState = listState,
+                        showMarks = state.mode == LocalPickerMode.UPLOAD,
+                        isMarked = state::isMarked,
                         onSelect = onSelect,
                         onOpen = onOpen,
+                        onToggleMark = onToggleMark,
                         modifier = Modifier.weight(1f),
                     )
                 }
                 DuoBanner(
                     text = when (state.mode) {
                         LocalPickerMode.UPLOAD ->
-                            "上传到 ${state.remoteDir.ifBlank { "当前远端目录" }}"
+                            (if (markedCount > 0) "已选 $markedCount 个 · " else "") +
+                                "上传到 ${state.remoteDir.ifBlank { "当前远端目录" }}"
 
                         LocalPickerMode.DOWNLOAD ->
-                            "保存“${state.pendingDownload?.name ?: "文件"}”到此文件夹"
+                            if (state.pendingDownloads.size > 1) {
+                                "保存 ${state.pendingDownloads.size} 个文件到此文件夹"
+                            } else {
+                                "保存“${state.pendingDownload?.name ?: "文件"}”到此文件夹"
+                            }
                     },
                     tone = BannerTone.Info,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
@@ -173,9 +185,10 @@ fun LocalPickerScreen(
                     actions = when (state.mode) {
                         LocalPickerMode.UPLOAD -> listOf(
                             DuoAction(
-                                "上传选中文件",
+                                if (markedCount > 0) "上传已选 $markedCount 个" else "上传选中文件",
                                 primary = true,
-                                enabled = selected != null && !selected.isDirectory && !state.loading,
+                                enabled = (markedCount > 0 || (selected != null && !selected.isDirectory)) &&
+                                    !state.loading,
                             ),
                             DuoAction("关闭"),
                         )
@@ -416,8 +429,11 @@ private fun LocalEntryList(
     entries: List<LocalEntry>,
     selectedIndex: Int,
     listState: androidx.compose.foundation.lazy.LazyListState,
+    showMarks: Boolean,
+    isMarked: (LocalEntry) -> Boolean,
     onSelect: (Int) -> Unit,
     onOpen: (LocalEntry) -> Unit,
+    onToggleMark: (LocalEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalDuoColors.current
@@ -485,6 +501,23 @@ private fun LocalEntryList(
                     color = colors.textTertiary,
                     maxLines = 1,
                 )
+                if (showMarks && !entry.isDirectory) {
+                    Spacer(Modifier.width(6.dp))
+                    val marked = isMarked(entry)
+                    Box(
+                        Modifier
+                            .size(26.dp)
+                            .clickable { onToggleMark(entry) },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            if (marked) Icons.Outlined.CheckBox else Icons.Outlined.CheckBoxOutlineBlank,
+                            contentDescription = if (marked) "取消选择" else "加入上传列表",
+                            tint = if (marked) colors.accent else colors.textTertiary,
+                            modifier = Modifier.size(17.dp),
+                        )
+                    }
+                }
             }
         }
     }
@@ -501,9 +534,9 @@ private fun LocalFooter(state: LocalFilesUiState) {
             when {
                 state.authPrompt -> "B 授权 · A 返回 · X 使用应用目录"
                 state.mode == LocalPickerMode.UPLOAD ->
-                    "B 打开/上传 · A 返回 · Y 刷新 · L1/R1 切换目录"
+                    "B 打开/上传 · A 返回 · X 刷新 · Y 多选 · L1/R1 切换目录"
 
-                else -> "B 打开文件夹/保存 · A 返回 · Y 刷新 · L1/R1 切换目录"
+                else -> "B 打开文件夹/保存 · A 返回 · X 刷新 · L1/R1 切换目录"
             },
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
             color = colors.textTertiary,

@@ -45,6 +45,8 @@ data class DuoSettings(
     val theme: String = "dark",
     val focusRingStyle: String = "white",
     val diagnostics: Boolean = false,
+    /** Enter Android picture-in-picture when a single-screen stream is backgrounded. */
+    val pipOnBackground: Boolean = true,
     /** Persisted SAF tree URI for the optional, one-time local folder grant. */
     val localTreeUri: String = "",
 )
@@ -85,6 +87,7 @@ class SettingsStore(private val context: Context) {
                 theme = prefs[KEY_THEME] ?: "dark",
                 focusRingStyle = prefs[KEY_FOCUS_RING] ?: "white",
                 diagnostics = prefs[KEY_DIAGNOSTICS] ?: false,
+                pipOnBackground = prefs[KEY_PIP_ON_BACKGROUND] ?: true,
                 localTreeUri = prefs[KEY_LOCAL_TREE_URI].orEmpty(),
             )
         }
@@ -117,6 +120,7 @@ class SettingsStore(private val context: Context) {
             prefs[KEY_THEME] = settings.theme
             prefs[KEY_FOCUS_RING] = settings.focusRingStyle
             prefs[KEY_DIAGNOSTICS] = settings.diagnostics
+            prefs[KEY_PIP_ON_BACKGROUND] = settings.pipOnBackground
             prefs[KEY_LOCAL_TREE_URI] = settings.localTreeUri
         }
     }
@@ -192,6 +196,7 @@ class SettingsStore(private val context: Context) {
         val KEY_THEME = stringPreferencesKey("theme")
         val KEY_FOCUS_RING = stringPreferencesKey("focus_ring")
         val KEY_DIAGNOSTICS = booleanPreferencesKey("diagnostics")
+        val KEY_PIP_ON_BACKGROUND = booleanPreferencesKey("pip_on_background")
         val KEY_LOCAL_TREE_URI = stringPreferencesKey("local_tree_uri")
     }
 }

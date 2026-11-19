@@ -1,13 +1,16 @@
 package com.sour.duoremote
 
 import android.annotation.SuppressLint
+import android.app.PictureInPictureParams
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.hardware.display.DisplayManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Rational
 import android.view.Display
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -42,9 +45,12 @@ import com.sour.duoremote.protocol.api.UuApiClient
 import com.sour.duoremote.protocol.file.FileEntry
 import com.sour.duoremote.protocol.proto.ConnectOptions
 import com.sour.duoremote.protocol.rtc.RtcRuntime
+import com.sour.duoremote.session.DownloadSource
+import com.sour.duoremote.session.DownloadTarget
 import com.sour.duoremote.session.FileTransferState
 import com.sour.duoremote.session.SessionController
 import com.sour.duoremote.session.SessionKeepAliveService
+import com.sour.duoremote.session.UploadSource
 import com.sour.duoremote.ui.AppRoute
 import com.sour.duoremote.ui.components.GamepadHelpOverlay
 import com.sour.duoremote.ui.controlcenter.ControlCenterScreen
@@ -94,6 +100,7 @@ import com.sour.duoremote.ui.settings.SettingsUiState
 import com.sour.duoremote.ui.settings.settingsRows
 import com.sour.duoremote.ui.streaming.DualStreamingBottom
 import com.sour.duoremote.ui.streaming.ImeMode
+import com.sour.duoremote.ui.streaming.RemoteVideo
 import com.sour.duoremote.ui.streaming.SingleStreamingScreen
 import com.sour.duoremote.ui.streaming.StreamingUiState
 import com.sour.duoremote.ui.streaming.StreamingVideoTop
@@ -141,6 +148,7 @@ class MainActivity : ComponentActivity() {
     private var settingsReturnRoute by mutableStateOf<AppRoute>(AppRoute.Home)
     private var filesReturnRoute by mutableStateOf<AppRoute>(AppRoute.Home)
     private var showHelp by mutableStateOf(false)
+    private var pipMode by mutableStateOf(false)
     private var accountName by mutableStateOf("本机账号")
     private var accountIndex by mutableStateOf(0)
     private var accountConfirmLogout by mutableStateOf(false)
@@ -230,11 +238,13 @@ class MainActivity : ComponentActivity() {
                     streamingUi.imeMode,
                     route,
                     showHelp,
+                    pipMode,
                 ) {
                     val suppressed = streamingUi.localMenu ||
                         streamingUi.imeMode != ImeMode.HIDDEN ||
                         route != AppRoute.Home ||
-                        showHelp
+                        showHelp ||
+                        pipMode
                     if (suppressed) streamingUi.dragLock = false
                     sessionController?.setInputSuppressed(suppressed)
                 }
@@ -332,6 +342,22 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun ActivityContent(stage: Stage, layout: HostLayout) {
+        if (pipMode) {
+            val video = sessionController?.videoTrack
+            val client = sessionController
+            if (video != null && client != null) {
+                RemoteVideo(
+                    track = video,
+                    modifier = Modifier.fillMaxSize(),
+                    directTouch = false,
+                    session = client,
+                    scale = duoSettings.videoScale,
+                )
+            } else {
+                BlackHost(modifier = Modifier.fillMaxSize())
+            }
+            return
+        }
         when (stage) {
             Stage.KEY_SETUP -> KeySetupScreen(
                 secure = secure,
@@ -549,6 +575,7 @@ class MainActivity : ComponentActivity() {
                 onUp = ::localBack,
                 onRefresh = ::refreshLocal,
                 onSelect = localFilesUi::select,
+                onToggleMark = localFilesUi::toggleMarked,
                 onConfirm = ::confirmLocalPicker,
                 modifier = modifier,
             )
@@ -918,27 +945,35 @@ class MainActivity : ComponentActivity() {
         localFilesUi.open(
             mode = LocalPickerMode.UPLOAD,
             remoteDir = client.fileState.path,
-            pending = null,
+            pending = emptyList(),
         )
         if (authorizedTreeUri() != null) showAuthorizedRoot() else showAppRoot()
     }
 
-    private fun openLocalDownload(entry: FileEntry) {
+    private fun openLocalDownload(entries: List<FileEntry>) {
         val client = sessionController ?: return
         if (duoSettings.viewOnly) return
-        if (entry.isDirectory) {
+        val files = entries.filterNot { it.isDirectory }
+        if (files.isEmpty()) {
             filesUi.error = "文件夹下载暂未支持"
             return
         }
-        val remotePath = entry.fullPath.ifBlank {
-            FileTransferState.childOf(client.fileState.path, entry.name)
+        val pending = files.map { entry ->
+            PendingDownload(
+                name = entry.name,
+                remotePath = entry.fullPath.ifBlank {
+                    FileTransferState.childOf(client.fileState.path, entry.name)
+                },
+                size = entry.size,
+            )
         }
         filesUi.error = null
         localFilesUi.open(
             mode = LocalPickerMode.DOWNLOAD,
             remoteDir = client.fileState.path,
-            pending = PendingDownload(entry.name, remotePath, entry.size),
+            pending = pending,
         )
+        filesUi.clearMarked()
         if (authorizedTreeUri() != null) showAuthorizedRoot() else showAppRoot()
     }
 
@@ -955,32 +990,32 @@ class MainActivity : ComponentActivity() {
             localFilesUi.reportError("会话未连接")
             return
         }
-        val entry = localFilesUi.selected
-        if (entry == null || entry.isDirectory) {
-            localFilesUi.reportError("请选择一个文件")
+        val marked = localFilesUi.markedEntries
+        val selected = localFilesUi.selected
+        val entries = if (marked.isNotEmpty()) marked else listOfNotNull(selected)
+        if (entries.isEmpty() || entries.any { it.isDirectory }) {
+            localFilesUi.reportError("请选择文件")
             return
         }
-        val size = LocalFileAccess.sizeOf(this, entry)
-        if (size < 0L) {
-            localFilesUi.reportError("无法读取文件大小")
-            return
-        }
-        val input = LocalFileAccess.openInput(this, entry)
-        if (input == null) {
-            localFilesUi.reportError("无法打开该文件")
-            return
+        val sources = ArrayList<UploadSource>(entries.size)
+        for (entry in entries) {
+            val size = LocalFileAccess.sizeOf(this, entry)
+            if (size < 0L) {
+                localFilesUi.reportError("无法读取 ${entry.name} 的大小")
+                return
+            }
+            sources += UploadSource(
+                name = entry.name,
+                size = size,
+                modifiedTime = entry.modifiedTime,
+                open = { LocalFileAccess.openInput(this@MainActivity, entry) },
+            )
         }
         val remoteDir = localFilesUi.remoteDir
         localFilesUi.close()
         filesUi.error = null
         filesUi.tab = FilesTab.QUEUE
-        val started = client.uploadFile(
-            name = entry.name,
-            size = size,
-            modifiedTime = entry.modifiedTime,
-            input = input,
-            remoteDir = remoteDir,
-        )
+        val started = client.uploadFiles(sources, remoteDir)
         if (!started) filesUi.error = client.fileState.error ?: "无法开始上传"
     }
 
@@ -990,8 +1025,8 @@ class MainActivity : ComponentActivity() {
             localFilesUi.reportError("会话未连接")
             return
         }
-        val pending = localFilesUi.pendingDownload
-        if (pending == null) {
+        val pending = localFilesUi.pendingDownloads
+        if (pending.isEmpty()) {
             localFilesUi.reportError("没有待下载文件")
             return
         }
@@ -1000,25 +1035,26 @@ class MainActivity : ComponentActivity() {
             localFilesUi.reportError("请选择保存文件夹")
             return
         }
-        val output = LocalFileAccess.createOutput(this, location, pending.name)
-        if (output == null) {
-            localFilesUi.reportError("无法在此文件夹创建文件")
-            return
-        }
-        val started = client.downloadFile(
-            remotePath = pending.remotePath,
-            name = pending.name,
-            size = pending.size,
-            output = output.stream,
-        )
-        if (!started) {
-            output.delete()
-            localFilesUi.reportError(client.fileState.error ?: "无法开始下载")
-            return
+        val sources = pending.map { item ->
+            DownloadSource(
+                remotePath = item.remotePath,
+                name = item.name,
+                size = item.size,
+                openOutput = {
+                    LocalFileAccess.createOutput(this, location, item.name)?.let { output ->
+                        DownloadTarget(
+                            stream = output.stream,
+                            abort = output.delete,
+                        )
+                    }
+                },
+            )
         }
         localFilesUi.close()
         filesUi.error = null
         filesUi.tab = FilesTab.QUEUE
+        val started = client.downloadFiles(sources)
+        if (!started) filesUi.error = client.fileState.error ?: "无法开始下载"
     }
 
     private fun connectSession(device: DemoDevice) {
@@ -2066,7 +2102,9 @@ class MainActivity : ComponentActivity() {
                         filesUi.select(0)
                     }
 
-                    else -> openLocalDownload(entry)
+                    else -> openLocalDownload(
+                        filesUi.markedEntries.ifEmpty { listOf(entry) },
+                    )
                 }
                 true
             }
@@ -2090,9 +2128,20 @@ class MainActivity : ComponentActivity() {
             KeyEvent.KEYCODE_BUTTON_Y -> {
                 val entry = entries.getOrNull(filesUi.index)
                 when {
+                    filesUi.markedEntries.isNotEmpty() -> openLocalDownload(filesUi.markedEntries)
                     entry == null -> filesUi.error = "请选择一个文件"
                     entry.isDirectory -> filesUi.error = "文件夹下载暂未支持"
-                    else -> openLocalDownload(entry)
+                    else -> openLocalDownload(listOf(entry))
+                }
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_L2 -> {
+                val entry = entries.getOrNull(filesUi.index)
+                when {
+                    entry == null -> filesUi.error = "请选择一个文件"
+                    entry.isDirectory -> filesUi.error = "只能多选文件"
+                    else -> filesUi.toggleMarked(entry)
                 }
                 true
             }
@@ -2178,6 +2227,21 @@ class MainActivity : ComponentActivity() {
                 true
             }
 
+            KeyEvent.KEYCODE_BUTTON_Y -> {
+                if (localFilesUi.mode == LocalPickerMode.UPLOAD) {
+                    localFilesUi.selected?.let { entry ->
+                        if (entry.isDirectory) {
+                            localFilesUi.reportError("请选择文件后再多选")
+                        } else {
+                            localFilesUi.toggleMarked(entry)
+                        }
+                    }
+                } else {
+                    refreshLocal()
+                }
+                true
+            }
+
             KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_R1 -> {
                 when (localFilesUi.current?.root ?: LocalRootKind.APP) {
                     LocalRootKind.APP -> showAuthorizedRoot()
@@ -2258,6 +2322,29 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        val client = sessionController ?: return
+        if (client.videoTrack == null || !duoSettings.pipOnBackground) return
+        if (host.layout != HostLayout.SINGLE_TOP || route != AppRoute.Home) return
+        if (isInPictureInPictureMode) return
+        runCatching {
+            enterPictureInPictureMode(
+                PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational(16, 9))
+                    .build(),
+            )
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration,
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        pipMode = isInPictureInPictureMode
+    }
+
     override fun onDestroy() {
         setPickerKeepAlive(false)
         displayManager.unregisterDisplayListener(displayListener)
@@ -2282,9 +2369,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         // Keep the signaling/RTC session alive in the background, but never leave a remote
-        // gamepad button or held key down, and silence remote audio while hidden.
+        // gamepad button or held key down, and silence remote audio while hidden. Picture-in-
+        // picture keeps watching, so audio stays on in that mode.
         sessionController?.setInputSuppressed(true)
-        sessionController?.setAudioPlayout(false)
+        if (!isInPictureInPictureMode) {
+            sessionController?.setAudioPlayout(false)
+        }
         super.onStop()
     }
 }

@@ -66,6 +66,27 @@ data class StreamStats(
     val elapsedSeconds: Long = 0,
 )
 
+/** One upload item; the stream is opened lazily when the batch reaches this file. */
+data class UploadSource(
+    val name: String,
+    val size: Long,
+    val modifiedTime: Long,
+    val open: () -> InputStream?,
+)
+
+/** One download item; the local file is created lazily when the batch reaches this file. */
+data class DownloadSource(
+    val remotePath: String,
+    val name: String,
+    val size: Long,
+    val openOutput: () -> DownloadTarget?,
+)
+
+data class DownloadTarget(
+    val stream: OutputStream,
+    val abort: () -> Unit,
+)
+
 /**
  * Activity-scoped orchestration for one remote-control attempt.
  *
@@ -121,10 +142,14 @@ class SessionController(
     private var protocolReady = false
     private var handshakeJob: Job? = null
     private var protocolSequence = 1L
+    private var uploadBatch: List<UploadSource>? = null
+    private var uploadBatchDir: String? = null
+    private var downloadBatch: List<DownloadSource>? = null
+    private var batchCursor = 0
     private val fileTransfer = FileTransferEngine(
         send = { bytes -> rtc?.sendProtobufText(UuRtcClient.TEXT_CHANNEL, bytes) == true },
         onState = { next ->
-            scope.launch(Dispatchers.Main.immediate) { fileState = next }
+            scope.launch(Dispatchers.Main.immediate) { onFileTransferState(next) }
         },
         now = { System.currentTimeMillis() },
     )
@@ -198,6 +223,7 @@ class SessionController(
         protocolSequence = 1L
         handshakeJob?.cancel()
         handshakeJob = null
+        clearTransferBatch()
         fileTransfer.reset()
         signaling?.close()
         signaling = null
@@ -251,6 +277,7 @@ class SessionController(
         protocolSequence = 1L
         handshakeJob?.cancel()
         handshakeJob = null
+        clearTransferBatch()
         fileTransfer.reset()
         signaling?.close()
         signaling = null
@@ -282,6 +309,8 @@ class SessionController(
         if (viewOnly && !this.viewOnly) {
             // Enabling view-only must not leave a held key/button/pad sample on the host.
             releaseAllInput()
+            clearTransferBatch()
+            fileTransfer.cancel()
         }
         this.gamepadPassthrough = gamepadPassthrough
         this.gamepadVibration = gamepadVibration
@@ -335,6 +364,11 @@ class SessionController(
             runCatching { input.close() }
             return false
         }
+        if (uploadBatch != null || downloadBatch != null) {
+            runCatching { input.close() }
+            fileState = fileState.copy(error = "请先等待当前批量传输结束")
+            return false
+        }
         return fileTransfer.upload(name, size, modifiedTime, input, remoteDir)
     }
 
@@ -348,11 +382,140 @@ class SessionController(
             runCatching { output.close() }
             return false
         }
+        if (uploadBatch != null || downloadBatch != null) {
+            runCatching { output.close() }
+            fileState = fileState.copy(error = "请先等待当前批量传输结束")
+            return false
+        }
         return fileTransfer.download(remotePath, name, size, output)
+    }
+
+    /**
+     * Queues multiple files into one remote directory. Files are opened one at a time so a large
+     * batch does not keep dozens of descriptors alive; the next file starts after the host accepts
+     * the previous one.
+     */
+    fun uploadFiles(sources: List<UploadSource>, remoteDir: String = fileState.path): Boolean {
+        if (viewOnly || sources.isEmpty()) return false
+        if (hasActiveTransfer() || uploadBatch != null || downloadBatch != null) {
+            fileState = fileState.copy(error = "请先等待当前传输结束")
+            return false
+        }
+        uploadBatch = sources
+        uploadBatchDir = remoteDir
+        downloadBatch = null
+        batchCursor = 0
+        startNextUpload()
+        return true
+    }
+
+    /** Queues multiple remote files into local targets chosen by [DownloadSource.openOutput]. */
+    fun downloadFiles(sources: List<DownloadSource>): Boolean {
+        if (viewOnly || sources.isEmpty()) return false
+        if (hasActiveTransfer() || uploadBatch != null || downloadBatch != null) {
+            fileState = fileState.copy(error = "请先等待当前传输结束")
+            return false
+        }
+        downloadBatch = sources
+        uploadBatch = null
+        batchCursor = 0
+        startNextDownload()
+        return true
     }
 
     fun cancelFileTransfer() {
         fileTransfer.cancel()
+        clearTransferBatch()
+    }
+
+    private fun onFileTransferState(next: FileTransferState) {
+        fileState = next
+        val transfer = next.transfer ?: return
+        if (uploadBatch == null && downloadBatch == null) return
+        when (transfer.status) {
+            TransferStatus.COMPLETED -> {
+                if (uploadBatch != null) startNextUpload() else startNextDownload()
+            }
+
+            TransferStatus.FAILED, TransferStatus.CANCELED -> {
+                clearTransferBatch()
+            }
+
+            else -> Unit
+        }
+    }
+
+    private fun startNextUpload() {
+        val batch = uploadBatch ?: return
+        val source = batch.getOrNull(batchCursor)
+        if (source == null) {
+            val count = batch.size
+            clearTransferBatch()
+            fileState = fileState.copy(notice = "批量上传完成（$count 个文件）")
+            return
+        }
+        val input = runCatching { source.open() }.getOrNull()
+        if (input == null) {
+            clearTransferBatch()
+            fileState = fileState.copy(error = "无法打开 ${source.name}")
+            return
+        }
+        batchCursor += 1
+        val started = fileTransfer.upload(
+            name = source.name,
+            size = source.size,
+            modifiedTime = source.modifiedTime,
+            input = input,
+            remoteDir = uploadBatchDir ?: fileState.path,
+            batchIndex = batchCursor,
+            batchTotal = batch.size,
+        )
+        if (!started) {
+            runCatching { input.close() }
+            clearTransferBatch()
+        }
+    }
+
+    private fun startNextDownload() {
+        val batch = downloadBatch ?: return
+        val source = batch.getOrNull(batchCursor)
+        if (source == null) {
+            val count = batch.size
+            clearTransferBatch()
+            fileState = fileState.copy(notice = "批量下载完成（$count 个文件）")
+            return
+        }
+        val target = runCatching { source.openOutput() }.getOrNull()
+        if (target == null) {
+            clearTransferBatch()
+            fileState = fileState.copy(error = "无法创建 ${source.name}")
+            return
+        }
+        batchCursor += 1
+        val started = fileTransfer.download(
+            remotePath = source.remotePath,
+            name = source.name,
+            sizeHint = source.size,
+            output = target.stream,
+            batchIndex = batchCursor,
+            batchTotal = batch.size,
+        )
+        if (!started) {
+            target.abort()
+            clearTransferBatch()
+        }
+    }
+
+    private fun hasActiveTransfer(): Boolean =
+        fileState.transfer?.status == TransferStatus.PREPARING ||
+            fileState.transfer?.status == TransferStatus.TRANSFERRING ||
+            fileState.transfer?.status == TransferStatus.WAITING
+
+    private fun clearTransferBatch() {
+        uploadBatch = null
+        uploadBatchDir = null
+        downloadBatch = null
+        batchCursor = 0
     }
 
     fun handleGamepadKey(keyCode: Int, action: Int): Boolean {
@@ -1000,6 +1163,7 @@ class SessionController(
         protocolSequence = 1L
         handshakeJob?.cancel()
         handshakeJob = null
+        clearTransferBatch()
         fileTransfer.reset()
         signaling?.close()
         signaling = null

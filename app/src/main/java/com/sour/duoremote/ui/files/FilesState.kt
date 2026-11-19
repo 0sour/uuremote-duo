@@ -3,6 +3,7 @@ package com.sour.duoremote.ui.files
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.sour.duoremote.protocol.file.FileEntry
 
 enum class FilesTab(val label: String) {
     BROWSE("浏览"),
@@ -18,11 +19,28 @@ class FilesUiState {
     var tab by mutableStateOf(FilesTab.BROWSE)
     var index by mutableStateOf(0)
     var error by mutableStateOf<String?>(null)
+    var marked by mutableStateOf<Map<String, FileEntry>>(emptyMap())
+        private set
+
+    val markedEntries: List<FileEntry>
+        get() = marked.values.filterNot { it.isDirectory }.sortedBy { it.name.lowercase() }
+
+    fun isMarked(entry: FileEntry): Boolean = entry.fullPath in marked
+
+    fun toggleMarked(entry: FileEntry) {
+        if (entry.isDirectory) return
+        marked = if (entry.fullPath in marked) marked - entry.fullPath else marked + (entry.fullPath to entry)
+    }
+
+    fun clearMarked() {
+        marked = emptyMap()
+    }
 
     fun reset() {
         tab = FilesTab.BROWSE
         index = 0
         error = null
+        marked = emptyMap()
     }
 
     fun select(index: Int) {

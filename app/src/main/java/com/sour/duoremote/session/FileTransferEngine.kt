@@ -23,6 +23,10 @@ data class ActiveTransfer(
     val done: Long,
     val status: TransferStatus,
     val message: String? = null,
+    /** 1-based index inside a batch; 0 when this is a single-file transfer. */
+    val batchIndex: Int = 0,
+    /** Total number of files in the batch; 0 when this is a single-file transfer. */
+    val batchTotal: Int = 0,
 ) {
     val progress: Float
         get() = if (total <= 0L) 0f else (done.toFloat() / total).coerceIn(0f, 1f)
@@ -108,6 +112,8 @@ class FileTransferEngine(
         modifiedTime: Long,
         input: InputStream,
         remoteDir: String = state.path,
+        batchIndex: Int = 0,
+        batchTotal: Int = 0,
     ): Boolean {
         if (state.transfer?.status in ACTIVE_STATUSES) {
             publish(state.copy(error = "请先等待当前传输结束"))
@@ -142,6 +148,8 @@ class FileTransferEngine(
                     done = 0L,
                     status = TransferStatus.PREPARING,
                     message = "准备上传",
+                    batchIndex = batchIndex,
+                    batchTotal = batchTotal,
                 ),
                 error = null,
                 notice = null,
@@ -168,6 +176,8 @@ class FileTransferEngine(
         name: String,
         sizeHint: Long,
         output: OutputStream,
+        batchIndex: Int = 0,
+        batchTotal: Int = 0,
     ): Boolean {
         if (state.transfer?.status in ACTIVE_STATUSES) {
             publish(state.copy(error = "请先等待当前传输结束"))
@@ -203,6 +213,8 @@ class FileTransferEngine(
                     done = 0L,
                     status = TransferStatus.PREPARING,
                     message = "准备下载",
+                    batchIndex = batchIndex,
+                    batchTotal = batchTotal,
                 ),
                 error = null,
                 notice = null,

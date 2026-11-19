@@ -56,6 +56,9 @@ class LocalFilesUiState {
         private set
     var entries by mutableStateOf<List<LocalEntry>>(emptyList())
         private set
+    /** Files marked for a multi-file upload; keyed by their stable local path. */
+    var marked by mutableStateOf<Map<String, LocalEntry>>(emptyMap())
+        private set
     var index by mutableStateOf(0)
         private set
     var loading by mutableStateOf(false)
@@ -66,8 +69,10 @@ class LocalFilesUiState {
         private set
     var remoteDir by mutableStateOf("")
         private set
-    var pendingDownload by mutableStateOf<PendingDownload?>(null)
+    var pendingDownloads by mutableStateOf<List<PendingDownload>>(emptyList())
         private set
+    val pendingDownload: PendingDownload?
+        get() = pendingDownloads.firstOrNull()
     var treeAvailable by mutableStateOf(false)
         private set
     var authPrompt by mutableStateOf(false)
@@ -83,13 +88,28 @@ class LocalFilesUiState {
     val selected: LocalEntry?
         get() = entries.getOrNull(index.coerceIn(0, maxOf(0, entries.size - 1)))
 
-    fun open(mode: LocalPickerMode, remoteDir: String, pending: PendingDownload?) {
+    val markedEntries: List<LocalEntry>
+        get() = marked.values.sortedBy { it.name.lowercase() }
+
+    fun isMarked(entry: LocalEntry): Boolean = entry.path in marked
+
+    fun toggleMarked(entry: LocalEntry) {
+        if (entry.isDirectory) return
+        marked = if (entry.path in marked) marked - entry.path else marked + (entry.path to entry)
+    }
+
+    fun clearMarked() {
+        marked = emptyMap()
+    }
+
+    fun open(mode: LocalPickerMode, remoteDir: String, pending: List<PendingDownload>) {
         this.mode = mode
         this.remoteDir = remoteDir
-        pendingDownload = pending
+        pendingDownloads = pending
         visible = true
         stack = emptyList()
         entries = emptyList()
+        marked = emptyMap()
         index = 0
         loading = false
         error = null
@@ -203,13 +223,14 @@ class LocalFilesUiState {
         visible = false
         stack = emptyList()
         entries = emptyList()
+        marked = emptyMap()
         index = 0
         loading = false
         error = null
         notice = null
         authPrompt = false
         remoteDir = ""
-        pendingDownload = null
+        pendingDownloads = emptyList()
         loadToken++
     }
 }

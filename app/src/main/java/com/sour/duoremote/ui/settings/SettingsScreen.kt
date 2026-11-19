@@ -664,6 +664,14 @@ internal fun settingsRows(
                     onChange(settings.copy(singleHost = values[(settings.singleHost.ordinal + step + values.size) % values.size]))
                 },
             ),
+            row(
+                "后台小窗",
+                "单屏串流时按 Home 进入画中画",
+                if (settings.pipOnBackground) "开" else "关",
+                adjust = boolToggle(settings.pipOnBackground) {
+                    onChange(settings.copy(pipOnBackground = it))
+                },
+            ),
         )
 
         SettingsCategory.PERIPHERAL -> listOf(

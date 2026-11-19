@@ -22,6 +22,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.InsertDriveFile
+import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Upload
@@ -71,13 +73,14 @@ fun FilesScreen(
     onCancel: () -> Unit,
     onClose: () -> Unit,
     onUpload: () -> Unit,
-    onDownload: (FileEntry) -> Unit,
+    onDownload: (List<FileEntry>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalDuoColors.current
     val entries = state.entries
     val selectedIndex = ui.index.coerceIn(0, maxOf(0, entries.size - 1))
     val selected = entries.getOrNull(selectedIndex)
+    val markedCount = ui.marked.size
     val parent = state.parentPath()
     val listState = rememberLazyListState()
 
@@ -135,7 +138,10 @@ fun FilesScreen(
                             DuoAction("上级", enabled = parent != null),
                             DuoAction("刷新"),
                             DuoAction("上传", primary = true),
-                            DuoAction("下载", enabled = selected != null && !selected.isDirectory),
+                            DuoAction(
+                                if (markedCount > 0) "下载已选 $markedCount 个" else "下载",
+                                enabled = markedCount > 0 || (selected != null && !selected.isDirectory),
+                            ),
                         ),
                         onAction = { index ->
                             ui.error = null
@@ -143,12 +149,11 @@ fun FilesScreen(
                                 0 -> parent?.let(::open)
                                 1 -> onList(state.path)
                                 2 -> onUpload()
-                                3 -> if (selected == null) {
-                                    ui.error = "请选择一个文件"
-                                } else if (selected.isDirectory) {
-                                    ui.error = "文件夹下载暂未支持"
-                                } else {
-                                    onDownload(selected)
+                                3 -> when {
+                                    markedCount > 0 -> onDownload(ui.markedEntries)
+                                    selected == null -> ui.error = "请选择一个文件"
+                                    selected.isDirectory -> ui.error = "文件夹下载暂未支持"
+                                    else -> onDownload(listOf(selected))
                                 }
                             }
                         },
@@ -160,8 +165,10 @@ fun FilesScreen(
                         entries = entries,
                         selectedIndex = selectedIndex,
                         listState = listState,
+                        isMarked = ui::isMarked,
                         onSelect = ui::select,
                         onOpen = ::open,
+                        onToggleMark = ui::toggleMarked,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -183,8 +190,10 @@ private fun FileList(
     entries: List<FileEntry>,
     selectedIndex: Int,
     listState: androidx.compose.foundation.lazy.LazyListState,
+    isMarked: (FileEntry) -> Boolean,
     onSelect: (Int) -> Unit,
     onOpen: (String) -> Unit,
+    onToggleMark: (FileEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalDuoColors.current
@@ -271,6 +280,23 @@ private fun FileList(
                         color = colors.textTertiary,
                         maxLines = 1,
                     )
+                    if (!entry.isDirectory) {
+                        Spacer(Modifier.width(6.dp))
+                        val marked = isMarked(entry)
+                        Box(
+                            Modifier
+                                .size(26.dp)
+                                .clickable { onToggleMark(entry) },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                if (marked) Icons.Outlined.CheckBox else Icons.Outlined.CheckBoxOutlineBlank,
+                                contentDescription = if (marked) "取消选择" else "加入下载列表",
+                                tint = if (marked) colors.accent else colors.textTertiary,
+                                modifier = Modifier.size(17.dp),
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -521,7 +547,7 @@ private fun FooterHint(tab: FilesTab) {
     ) {
         Text(
             if (tab == FilesTab.BROWSE) {
-                "B 打开 · A 返回 · X 上传 · Y 下载 · L1/R1 切换"
+                "B 打开 · A 返回 · X 上传 · Y 下载 · L2 多选 · L1/R1 切换"
             } else {
                 "X 取消 · L1/R1 切换 · A 返回"
             },
@@ -532,13 +558,20 @@ private fun FooterHint(tab: FilesTab) {
     }
 }
 
-private fun statusLabel(transfer: ActiveTransfer): String = when (transfer.status) {
-    TransferStatus.PREPARING -> "准备中"
-    TransferStatus.TRANSFERRING -> "传输中"
-    TransferStatus.WAITING -> "等待远端确认"
-    TransferStatus.COMPLETED -> "已完成"
-    TransferStatus.FAILED -> transfer.message ?: "失败"
-    TransferStatus.CANCELED -> "已取消"
+private fun statusLabel(transfer: ActiveTransfer): String {
+    val base = when (transfer.status) {
+        TransferStatus.PREPARING -> "准备中"
+        TransferStatus.TRANSFERRING -> "传输中"
+        TransferStatus.WAITING -> "等待远端确认"
+        TransferStatus.COMPLETED -> "已完成"
+        TransferStatus.FAILED -> transfer.message ?: "失败"
+        TransferStatus.CANCELED -> "已取消"
+    }
+    return if (transfer.batchTotal > 1) {
+        "第 ${transfer.batchIndex}/${transfer.batchTotal} 个 · $base"
+    } else {
+        base
+    }
 }
 
 private fun transferSummary(transfer: ActiveTransfer?): String? {

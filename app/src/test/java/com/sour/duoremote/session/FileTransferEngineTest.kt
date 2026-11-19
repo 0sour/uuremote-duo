@@ -60,8 +60,12 @@ class FileTransferEngineTest {
                 size = payload.size.toLong(),
                 modifiedTime = 0L,
                 input = ByteArrayInputStream(payload),
+                batchIndex = 2,
+                batchTotal = 5,
             ),
         )
+        assertEquals(2, engine.state.transfer?.batchIndex)
+        assertEquals(5, engine.state.transfer?.batchTotal)
         val receive = lastRequest(sent) as FileRequest.Receive
         val taskId = receive.id.taskId
         assertEquals(taskId.toLong(), lastRequestEnvelope(sent).requestId)

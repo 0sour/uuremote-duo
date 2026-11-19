@@ -25,7 +25,7 @@ class LocalFilesUiStateTest {
     @Test
     fun openUploadCapturesRemoteDirectoryAndResetsNavigation() {
         val state = LocalFilesUiState()
-        state.open(LocalPickerMode.UPLOAD, "C:\\Users\\Public", null)
+        state.open(LocalPickerMode.UPLOAD, "C:\\Users\\Public", emptyList())
 
         assertTrue(state.visible)
         assertEquals(LocalPickerMode.UPLOAD, state.mode)
@@ -39,7 +39,7 @@ class LocalFilesUiStateTest {
     @Test
     fun pushPopAndSelectionUseOneStack() {
         val state = LocalFilesUiState()
-        state.open(LocalPickerMode.UPLOAD, "C:\\", null)
+        state.open(LocalPickerMode.UPLOAD, "C:\\", emptyList())
         val root = location("root")
         val child = location("child")
         state.beginAt(root)
@@ -64,7 +64,7 @@ class LocalFilesUiStateTest {
     @Test
     fun staleListingCannotReplaceNewerNavigation() {
         val state = LocalFilesUiState()
-        state.open(LocalPickerMode.DOWNLOAD, "C:\\", PendingDownload("a.txt", "C:\\a.txt", 4))
+        state.open(LocalPickerMode.DOWNLOAD, "C:\\", listOf(PendingDownload("a.txt", "C:\\a.txt", 4)))
         val root = location("root")
         val child = location("child")
         state.beginAt(root)
@@ -84,7 +84,7 @@ class LocalFilesUiStateTest {
     @Test
     fun authPromptKeepsPendingDownloadAndMode() {
         val state = LocalFilesUiState()
-        state.open(LocalPickerMode.DOWNLOAD, "C:\\", PendingDownload("a.txt", "C:\\a.txt", 4))
+        state.open(LocalPickerMode.DOWNLOAD, "C:\\", listOf(PendingDownload("a.txt", "C:\\a.txt", 4)))
         state.showAuthPrompt("not granted")
 
         assertTrue(state.authPrompt)
@@ -99,9 +99,44 @@ class LocalFilesUiStateTest {
     }
 
     @Test
+    fun marksSurviveFolderNavigationAndIgnoreDirectories() {
+        val state = LocalFilesUiState()
+        state.open(LocalPickerMode.UPLOAD, "C:\\", emptyList())
+        val root = location("root")
+        state.beginAt(root)
+        val first = entry("a.txt")
+        val second = entry("b.txt")
+        state.toggleMarked(first)
+        state.toggleMarked(entry("folder", true))
+        state.push(location("child"))
+        state.toggleMarked(second)
+
+        assertEquals(setOf("a.txt", "b.txt"), state.markedEntries.map { it.name }.toSet())
+        assertEquals(2, state.marked.size)
+
+        state.toggleMarked(first)
+        assertEquals(listOf("b.txt"), state.markedEntries.map { it.name })
+
+        state.clearMarked()
+        assertTrue(state.markedEntries.isEmpty())
+    }
+
+    @Test
+    fun closeClearsPendingDownloads() {
+        val state = LocalFilesUiState()
+        state.open(LocalPickerMode.DOWNLOAD, "C:\\", listOf(
+            PendingDownload("a.txt", "C:\\a.txt", 4),
+            PendingDownload("b.txt", "C:\\b.txt", 5),
+        ))
+        assertEquals(2, state.pendingDownloads.size)
+        state.close()
+        assertTrue(state.pendingDownloads.isEmpty())
+    }
+
+    @Test
     fun closeClearsPickerState() {
         val state = LocalFilesUiState()
-        state.open(LocalPickerMode.UPLOAD, "C:\\", null)
+        state.open(LocalPickerMode.UPLOAD, "C:\\", emptyList())
         state.beginAt(location("root"))
         state.close()
 
