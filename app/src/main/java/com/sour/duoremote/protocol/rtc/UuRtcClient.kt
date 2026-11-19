@@ -155,6 +155,16 @@ class UuRtcClient(
         return channel.send(DataChannel.Buffer(java.nio.ByteBuffer.wrap(bytes), true))
     }
 
+    /**
+     * Official TEXT-channel protobufs use PPID 51 (the non-binary frame type), even though the
+     * payload is raw protobuf rather than UTF-8. Match that framing for FTP RPCs.
+     */
+    fun sendProtobufText(label: String, bytes: ByteArray): Boolean {
+        val channel = channels[label] ?: return false
+        if (channel.state() != DataChannel.State.OPEN) return false
+        return channel.send(DataChannel.Buffer(java.nio.ByteBuffer.wrap(bytes), false))
+    }
+
     fun close() {
         if (!closed.compareAndSet(false, true)) return
         executor.execute {
@@ -371,10 +381,21 @@ class UuRtcClient(
             val bytes = ByteArray(data.remaining())
             data.get(bytes)
             when {
-                label == CONTROL_CHANNEL && !buffer.binary ->
-                    listener.onControlMessage(String(bytes, Charsets.UTF_8))
+                // CONTROL carries both JSON commands and protobuf handshakes. Try the raw
+                // payload first, then the JSON path for the normal action messages.
+                label == CONTROL_CHANNEL -> {
+                    listener.onTextMessage(bytes)
+                    if (!buffer.binary) {
+                        listener.onControlMessage(String(bytes, Charsets.UTF_8))
+                    }
+                }
 
-                label == TEXT_CHANNEL && buffer.binary ->
+                // Protobuf handshakes/FTP RPCs may arrive as PPID 53 binary or PPID 51 text
+                // frames depending on the host version; accept both on every tool channel.
+                label == TEXT_CHANNEL ||
+                    label == FILE_CHANNEL ||
+                    label == BINARY_CHANNEL ||
+                    label == STREAMER_CHANNEL ->
                     listener.onTextMessage(bytes)
             }
         }
@@ -428,13 +449,16 @@ class UuRtcClient(
     companion object {
         const val CONTROL_CHANNEL = "CONTROL_DATA_CHANNEL"
         const val TEXT_CHANNEL = "TEXT_DATA_CHANNEL"
+        const val STREAMER_CHANNEL = "STREAMER_DATA_CHANNEL"
+        const val FILE_CHANNEL = "FILE_DATA_CHANNEL"
+        const val BINARY_CHANNEL = "BINARY_DATA_CHANNEL"
         private const val MAX_PENDING_CANDIDATES = 128
         private val CHANNELS = listOf(
             CONTROL_CHANNEL,
             TEXT_CHANNEL,
-            "STREAMER_DATA_CHANNEL",
-            "FILE_DATA_CHANNEL",
-            "BINARY_DATA_CHANNEL",
+            STREAMER_CHANNEL,
+            FILE_CHANNEL,
+            BINARY_CHANNEL,
         )
         private val FACTORY_LOCK = Any()
         private val initialized = AtomicBoolean(false)

@@ -3,15 +3,19 @@ package com.sour.duoremote
 import android.annotation.SuppressLint
 import android.content.pm.ActivityInfo
 import android.hardware.display.DisplayManager
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.OpenableColumns
 import android.view.Display
 import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,8 +40,10 @@ import com.sour.duoremote.data.DuoSettings
 import com.sour.duoremote.data.SecureStore
 import com.sour.duoremote.data.SettingsStore
 import com.sour.duoremote.protocol.api.UuApiClient
+import com.sour.duoremote.protocol.file.FileEntry
 import com.sour.duoremote.protocol.proto.ConnectOptions
 import com.sour.duoremote.protocol.rtc.RtcRuntime
+import com.sour.duoremote.session.FileTransferState
 import com.sour.duoremote.session.SessionController
 import com.sour.duoremote.ui.AppRoute
 import com.sour.duoremote.ui.components.GamepadHelpOverlay
@@ -44,6 +51,10 @@ import com.sour.duoremote.ui.controlcenter.ControlCenterScreen
 import com.sour.duoremote.ui.controlcenter.ControlCenterState
 import com.sour.duoremote.ui.controlcenter.ControlField
 import com.sour.duoremote.ui.controlcenter.controlRows
+import com.sour.duoremote.ui.files.FilesScreen
+import com.sour.duoremote.ui.files.FilesTab
+import com.sour.duoremote.ui.files.FilesTopPreview
+import com.sour.duoremote.ui.files.FilesUiState
 import com.sour.duoremote.ui.home.BlackHost
 import com.sour.duoremote.ui.home.DemoDevice
 import com.sour.duoremote.ui.home.DualBottomScreen
@@ -100,6 +111,7 @@ class MainActivity : ComponentActivity() {
     private val homeUi = HomeUiState()
     private val settingsUi = SettingsUiState()
     private val controlCenter = ControlCenterState()
+    private val filesUi = FilesUiState()
     private val selectedId = mutableStateOf("")
     private var duoSettings by mutableStateOf(DuoSettings())
 
@@ -114,6 +126,7 @@ class MainActivity : ComponentActivity() {
     private var activeDeviceName by mutableStateOf<String?>(null)
     private var route by mutableStateOf<AppRoute>(AppRoute.Home)
     private var settingsReturnRoute by mutableStateOf<AppRoute>(AppRoute.Home)
+    private var filesReturnRoute by mutableStateOf<AppRoute>(AppRoute.Home)
     private var showHelp by mutableStateOf(false)
     private var accountName by mutableStateOf("本机账号")
     private var accountIndex by mutableStateOf(0)
@@ -193,6 +206,93 @@ class MainActivity : ComponentActivity() {
                     else -> Stage.HOME
                 }
                 val layout = host.layout
+                val pendingDownload = remember { mutableStateOf<FileEntry?>(null) }
+                val uploadLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.OpenDocument(),
+                ) { uri ->
+                    if (uri == null) return@rememberLauncherForActivityResult
+                    val meta = queryUpload(uri)
+                    if (meta == null) {
+                        filesUi.error = "无法读取文件信息"
+                        return@rememberLauncherForActivityResult
+                    }
+                    val input = runCatching { contentResolver.openInputStream(uri) }.getOrNull()
+                    if (input == null) {
+                        filesUi.error = "无法打开所选文件"
+                        return@rememberLauncherForActivityResult
+                    }
+                    val client = sessionController
+                    if (client == null) {
+                        runCatching { input.close() }
+                        filesUi.error = "会话未连接"
+                        return@rememberLauncherForActivityResult
+                    }
+                    filesUi.error = null
+                    filesUi.tab = FilesTab.QUEUE
+                    client.uploadFile(meta.first, meta.second, 0L, input)
+                }
+                val downloadLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.CreateDocument("application/octet-stream"),
+                ) { uri ->
+                    val entry = pendingDownload.value
+                    pendingDownload.value = null
+                    if (uri == null || entry == null) return@rememberLauncherForActivityResult
+                    val output = runCatching { contentResolver.openOutputStream(uri) }.getOrNull()
+                    if (output == null) {
+                        filesUi.error = "无法写入所选位置"
+                        return@rememberLauncherForActivityResult
+                    }
+                    val client = sessionController
+                    if (client == null) {
+                        runCatching { output.close() }
+                        filesUi.error = "会话未连接"
+                        return@rememberLauncherForActivityResult
+                    }
+                    val remotePath = entry.fullPath.ifBlank {
+                        FileTransferState.childOf(client.fileState.path, entry.name)
+                    }
+                    filesUi.error = null
+                    filesUi.tab = FilesTab.QUEUE
+                    client.downloadFile(remotePath, entry.name, entry.size, output)
+                }
+
+                LaunchedEffect(filesUi.requestUpload) {
+                    if (filesUi.requestUpload) {
+                        filesUi.requestUpload = false
+                        filesUi.error = null
+                        runCatching { uploadLauncher.launch(arrayOf("*/*")) }
+                            .onFailure { filesUi.error = "无法打开文件选择器" }
+                    }
+                }
+
+                LaunchedEffect(filesUi.requestDownload) {
+                    if (!filesUi.requestDownload) return@LaunchedEffect
+                    filesUi.requestDownload = false
+                    val client = sessionController
+                    if (client == null) {
+                        filesUi.error = "会话未连接"
+                        return@LaunchedEffect
+                    }
+                    val entry = client.fileState.entries.getOrNull(filesUi.index)
+                    when {
+                        entry == null -> filesUi.error = "请选择一个文件"
+                        entry.isDirectory -> filesUi.error = "文件夹下载暂未支持"
+                        else -> {
+                            pendingDownload.value = entry
+                            filesUi.error = null
+                            runCatching { downloadLauncher.launch(entry.name) }
+                                .onFailure {
+                                    pendingDownload.value = null
+                                    filesUi.error = "无法打开保存位置选择器"
+                                }
+                        }
+                    }
+                }
+
+                val fileEntriesSize = sessionController?.fileState?.entries?.size ?: 0
+                LaunchedEffect(fileEntriesSize) {
+                    filesUi.clamp(fileEntriesSize)
+                }
 
                 LaunchedEffect(
                     streamingUi.localMenu,
@@ -270,9 +370,19 @@ class MainActivity : ComponentActivity() {
                 }
 
                 LaunchedEffect(route, sessionController?.videoTrack) {
-                    if (route == AppRoute.ControlCenter && sessionController?.videoTrack == null) {
+                    if ((route == AppRoute.ControlCenter || route == AppRoute.Files) &&
+                        sessionController?.videoTrack == null
+                    ) {
                         route = AppRoute.Home
+                        filesReturnRoute = AppRoute.Home
                         streamingUi.localMenu = false
+                    }
+                }
+
+                LaunchedEffect(duoSettings.viewOnly) {
+                    if (duoSettings.viewOnly) {
+                        sessionController?.cancelFileTransfer()
+                        if (route == AppRoute.Files) closeFiles()
                     }
                 }
 
@@ -396,6 +506,31 @@ class MainActivity : ComponentActivity() {
                             onlineCount = devices.count { it.online },
                             preferenceSummary = preferenceSummary(),
                             sessionStatus = homeStatus(),
+                            modifier = Modifier.fillMaxSize(),
+                        )
+
+                        else -> BlackHost(modifier = Modifier.fillMaxSize())
+                    }
+                }
+
+                AppRoute.Files -> {
+                    val video = sessionController?.videoTrack
+                    val client = sessionController
+                    when {
+                        video != null && client != null && layout == HostLayout.DUAL -> FilesTopPreview(
+                            state = client.fileState,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+
+                        video != null && client != null && layout == HostLayout.SINGLE_TOP -> FilesScreen(
+                            state = client.fileState,
+                            ui = filesUi,
+                            onList = { path ->
+                                client.listFiles(path)
+                                filesUi.select(0)
+                            },
+                            onCancel = { client.cancelFileTransfer() },
+                            onClose = ::closeFiles,
                             modifier = Modifier.fillMaxSize(),
                         )
 
@@ -542,6 +677,22 @@ class MainActivity : ComponentActivity() {
                     BlackHost(modifier = Modifier.fillMaxSize())
                 }
 
+                AppRoute.Files -> if (video != null && client != null) {
+                    FilesScreen(
+                        state = client.fileState,
+                        ui = filesUi,
+                        onList = { path ->
+                            client.listFiles(path)
+                            filesUi.select(0)
+                        },
+                        onCancel = { client.cancelFileTransfer() },
+                        onClose = ::closeFiles,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    BlackHost(modifier = Modifier.fillMaxSize())
+                }
+
                 AppRoute.Home -> when {
                     video != null && client != null && layout == HostLayout.DUAL -> DualStreamingBottom(
                         title = activeDeviceName ?: "正在串流",
@@ -617,6 +768,37 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun queryUpload(uri: Uri): Pair<String, Long>? {
+        var name: String? = null
+        var size = -1L
+        runCatching {
+            contentResolver.query(
+                uri,
+                arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                    if (nameIndex >= 0) name = cursor.getString(nameIndex)
+                    if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) size = cursor.getLong(sizeIndex)
+                }
+            }
+        }
+        if (size < 0L) {
+            runCatching {
+                contentResolver.openAssetFileDescriptor(uri, "r")?.use { descriptor ->
+                    if (descriptor.length > 0L) size = descriptor.length
+                }
+            }
+        }
+        val displayName = name?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        if (size < 0L) return null
+        return displayName to size
+    }
+
     private fun connectSession(device: DemoDevice) {
         activeDeviceId = device.id
         activeDeviceName = device.name
@@ -633,6 +815,8 @@ class MainActivity : ComponentActivity() {
         activeDeviceName = null
         route = AppRoute.Home
         settingsReturnRoute = AppRoute.Home
+        filesReturnRoute = AppRoute.Home
+        filesUi.reset()
         showHelp = false
         streamingUi.resetForNewSession()
         controlCenter.close()
@@ -684,6 +868,20 @@ class MainActivity : ComponentActivity() {
         route = AppRoute.Home
     }
 
+    private fun openFiles() {
+        val client = sessionController ?: return
+        if (client.videoTrack == null || route == AppRoute.Files || duoSettings.viewOnly) return
+        filesReturnRoute = if (route == AppRoute.ControlCenter) AppRoute.ControlCenter else AppRoute.Home
+        filesUi.reset()
+        route = AppRoute.Files
+        client.listFiles()
+    }
+
+    private fun closeFiles() {
+        route = filesReturnRoute
+        filesReturnRoute = AppRoute.Home
+    }
+
     private fun cancelControlCenter() {
         controlCenter.cancel(duoSettings)
     }
@@ -701,6 +899,7 @@ class MainActivity : ComponentActivity() {
         result.draft?.let(controlCenter::updateDraft)
         result.settings?.let(::updateSettings)
         if (result.openHelp) showHelp = true
+        if (result.openFiles) openFiles()
     }
 
     private fun moveAccountSelection(delta: Int) {
@@ -959,6 +1158,20 @@ class MainActivity : ComponentActivity() {
             AppRoute.Settings -> closeSettings()
             AppRoute.Account -> closeAccount()
             AppRoute.ControlCenter -> closeControlCenter()
+            AppRoute.Files -> {
+                if (filesUi.tab == FilesTab.QUEUE) {
+                    filesUi.tab = FilesTab.BROWSE
+                } else {
+                    val parent = sessionController?.fileState?.parentPath()
+                    if (parent != null) {
+                        sessionController?.listFiles(parent)
+                        filesUi.select(0)
+                    } else {
+                        closeFiles()
+                    }
+                }
+            }
+
             AppRoute.Home -> {
                 if (sessionController?.videoTrack != null) {
                     streamingUi.localMenu = true
@@ -1012,6 +1225,7 @@ class MainActivity : ComponentActivity() {
                             AppRoute.Settings -> handleSettingsKey(event)
                             AppRoute.Account -> handleAccountKey(event)
                             AppRoute.ControlCenter -> handleControlCenterKey(event)
+                            AppRoute.Files -> handleFilesKey(event)
                             AppRoute.Home -> when {
                                 sessionController?.videoTrack != null -> handleStreamingKey(event)
                                 else -> handleHomeKey(event)
@@ -1070,6 +1284,7 @@ class MainActivity : ComponentActivity() {
                 AppRoute.Settings -> handleSettingsKey(event)
                 AppRoute.Account -> handleAccountKey(event)
                 AppRoute.ControlCenter -> handleControlCenterKey(event)
+                AppRoute.Files -> handleFilesKey(event)
                 AppRoute.Home -> when {
                     sessionController?.videoTrack != null -> handleStreamingKey(event)
                     else -> handleHomeKey(event)
@@ -1548,6 +1763,116 @@ class MainActivity : ComponentActivity() {
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> true
 
             else -> false
+        }
+    }
+
+    private fun handleFilesKey(event: KeyEvent): Boolean {
+        val client = sessionController ?: return false
+        if (event.action != KeyEvent.ACTION_UP) return isPadKey(event.keyCode)
+        filesUi.error = null
+        if (filesUi.tab == FilesTab.QUEUE) {
+            return when (event.keyCode) {
+                KeyEvent.KEYCODE_BUTTON_X -> {
+                    client.cancelFileTransfer()
+                    true
+                }
+
+                KeyEvent.KEYCODE_BUTTON_A,
+                KeyEvent.KEYCODE_BUTTON_B,
+                KeyEvent.KEYCODE_BACK,
+                -> {
+                    filesUi.tab = FilesTab.BROWSE
+                    true
+                }
+
+                KeyEvent.KEYCODE_BUTTON_L1 -> {
+                    filesUi.moveTab(-1)
+                    true
+                }
+
+                KeyEvent.KEYCODE_BUTTON_R1 -> {
+                    filesUi.moveTab(1)
+                    true
+                }
+
+                else -> isPadKey(event.keyCode)
+            }
+        }
+
+        val entries = client.fileState.entries
+        return when (event.keyCode) {
+            KeyEvent.KEYCODE_DPAD_UP -> {
+                filesUi.moveIndex(-1, entries.size)
+                true
+            }
+
+            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                filesUi.moveIndex(1, entries.size)
+                true
+            }
+
+            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                client.fileState.parentPath()?.let {
+                    client.listFiles(it)
+                    filesUi.select(0)
+                }
+                true
+            }
+
+            KeyEvent.KEYCODE_DPAD_RIGHT,
+            KeyEvent.KEYCODE_BUTTON_A,
+            KeyEvent.KEYCODE_DPAD_CENTER,
+            KeyEvent.KEYCODE_ENTER,
+            -> {
+                val entry = entries.getOrNull(filesUi.index)
+                when {
+                    entry == null -> filesUi.error = "请选择一个文件"
+                    entry.isDirectory -> {
+                        client.listFiles(
+                            entry.fullPath.ifBlank {
+                                FileTransferState.childOf(client.fileState.path, entry.name)
+                            },
+                        )
+                        filesUi.select(0)
+                    }
+
+                    else -> filesUi.requestDownload = true
+                }
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_B, KeyEvent.KEYCODE_BACK -> {
+                val parent = client.fileState.parentPath()
+                if (parent != null) {
+                    client.listFiles(parent)
+                    filesUi.select(0)
+                } else {
+                    closeFiles()
+                }
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_X -> {
+                filesUi.requestUpload = true
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_Y -> {
+                filesUi.requestDownload = true
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_L1 -> {
+                filesUi.moveTab(-1)
+                true
+            }
+
+            KeyEvent.KEYCODE_BUTTON_R1 -> {
+                filesUi.moveTab(1)
+                true
+            }
+
+            else -> isPadKey(event.keyCode)
         }
     }
 

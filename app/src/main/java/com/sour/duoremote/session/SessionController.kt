@@ -16,8 +16,10 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.sour.duoremote.protocol.api.UuApiClient
+import com.sour.duoremote.protocol.file.FileTransferCodec
 import com.sour.duoremote.protocol.proto.ConnectOptions
 import com.sour.duoremote.protocol.proto.ClipboardCodec
+import com.sour.duoremote.protocol.proto.FeatureFlags
 import com.sour.duoremote.protocol.proto.SendToRom
 import com.sour.duoremote.protocol.rtc.UuRtcClient
 import com.sour.duoremote.protocol.signaling.SignalingClient
@@ -39,6 +41,8 @@ import org.webrtc.EglBase
 import org.webrtc.IceCandidate
 import org.webrtc.PeerConnection
 import org.webrtc.VideoTrack
+import java.io.InputStream
+import java.io.OutputStream
 import java.util.UUID
 
 enum class SessionStage {
@@ -83,6 +87,8 @@ class SessionController(
         private set
     var stats by mutableStateOf(StreamStats())
         private set
+    var fileState by mutableStateOf(FileTransferState())
+        private set
     val dataChannels = LinkedHashMap<String, DataChannel>()
     private val heldKeys = LinkedHashSet<Int>()
     private val heldMouseButtons = LinkedHashSet<Int>()
@@ -112,6 +118,25 @@ class SessionController(
     private var appControlId: String? = null
     private var closing = false
     private val earlySoac = ArrayDeque<JsonObject>()
+    private var protocolReady = false
+    private var handshakeJob: Job? = null
+    private var protocolSequence = 1L
+    private val fileTransfer = FileTransferEngine(
+        send = { bytes -> rtc?.sendProtobufText(UuRtcClient.TEXT_CHANNEL, bytes) == true },
+        onState = { next ->
+            scope.launch(Dispatchers.Main.immediate) { fileState = next }
+        },
+        now = { System.currentTimeMillis() },
+    )
+
+    init {
+        scope.launch {
+            while (isActive) {
+                delay(2000)
+                fileTransfer.tick()
+            }
+        }
+    }
 
     private var gamepadPassthrough = true
     private var gamepadVibration = true
@@ -169,6 +194,11 @@ class SessionController(
         connectJob?.cancel()
         connectJob = null
         stopStats()
+        protocolReady = false
+        protocolSequence = 1L
+        handshakeJob?.cancel()
+        handshakeJob = null
+        fileTransfer.reset()
         signaling?.close()
         signaling = null
         rtc?.close()
@@ -217,6 +247,11 @@ class SessionController(
         connectJob?.cancel()
         connectJob = null
         stopStats()
+        protocolReady = false
+        protocolSequence = 1L
+        handshakeJob?.cancel()
+        handshakeJob = null
+        fileTransfer.reset()
         signaling?.close()
         signaling = null
         rtc?.close()
@@ -282,6 +317,42 @@ class SessionController(
         } else if (gamepadPassthrough && !viewOnly) {
             startGamepad()
         }
+    }
+
+    fun listFiles(path: String = fileState.path) {
+        if (viewOnly) return
+        fileTransfer.list(path)
+    }
+
+    fun uploadFile(
+        name: String,
+        size: Long,
+        modifiedTime: Long,
+        input: InputStream,
+        remoteDir: String = fileState.path,
+    ) {
+        if (viewOnly) {
+            runCatching { input.close() }
+            return
+        }
+        fileTransfer.upload(name, size, modifiedTime, input, remoteDir)
+    }
+
+    fun downloadFile(
+        remotePath: String,
+        name: String,
+        size: Long,
+        output: OutputStream,
+    ) {
+        if (viewOnly) {
+            runCatching { output.close() }
+            return
+        }
+        fileTransfer.download(remotePath, name, size, output)
+    }
+
+    fun cancelFileTransfer() {
+        fileTransfer.cancel()
     }
 
     fun handleGamepadKey(keyCode: Int, action: Int): Boolean {
@@ -392,8 +463,8 @@ class SessionController(
         val sent = sendAction("text_input", "content" to text)
         if (!sent) {
             // CONTROL may not be open yet (or the host only supports the legacy path).
-            // TEXT_DATA_CHANNEL carries Main.SendToRom{RomMsg_Text} instead.
-            rtc?.sendBinary(UuRtcClient.TEXT_CHANNEL, SendToRom.encodeText(text))
+            // TEXT_DATA_CHANNEL carries Main.SendToRom{RomMsg_Text} with the official PPID 51.
+            rtc?.sendProtobufText(UuRtcClient.TEXT_CHANNEL, SendToRom.encodeText(text))
         }
     }
 
@@ -545,7 +616,7 @@ class SessionController(
         if (text.isEmpty() || text.length > ClipboardCodec.MAX_TEXT_LENGTH) return
         if (text == lastClipboardText) return
         lastClipboardText = text
-        rtc?.sendBinary(
+        rtc?.sendProtobufText(
             UuRtcClient.TEXT_CHANNEL,
             ClipboardCodec.encodeTextRequest(clipboardRequestId++, text),
         )
@@ -566,7 +637,7 @@ class SessionController(
                 ignoreClipboardChange = false
             }
         }
-        rtc?.sendBinary(
+        rtc?.sendProtobufText(
             UuRtcClient.TEXT_CHANNEL,
             ClipboardCodec.encodeTextResponse(incoming.id),
         )
@@ -716,6 +787,9 @@ class SessionController(
                 startStats()
                 startGamepad()
             }
+            if (label == UuRtcClient.CONTROL_CHANNEL || label == UuRtcClient.TEXT_CHANNEL) {
+                maybeStartHandshake()
+            }
             if (label == UuRtcClient.TEXT_CHANNEL) {
                 maybeStartClipboard()
             }
@@ -729,6 +803,7 @@ class SessionController(
                     disconnectJob = null
                     setState(SessionStage.CHANNEL_READY, "串流通道已建立，视频渲染待接入")
                     startGamepad()
+                    maybeStartHandshake()
                 }
 
                 PeerConnection.PeerConnectionState.FAILED -> {
@@ -782,7 +857,70 @@ class SessionController(
 
         override fun onTextMessage(bytes: ByteArray) {
             if (run != generation) return
+            if (handleProtocolMessage(bytes)) return
             onRemoteClipboard(bytes)
+        }
+    }
+
+    private fun handleProtocolMessage(bytes: ByteArray): Boolean {
+        val incoming = runCatching { FileTransferCodec.parseMain(bytes) }.getOrNull() ?: return false
+        return when (incoming) {
+            is FileTransferCodec.Incoming.Action -> {
+                if (incoming.action == 0) {
+                    val sent = rtc?.sendBinary(
+                        UuRtcClient.CONTROL_CHANNEL,
+                        FileTransferCodec.encodeAction(
+                            seq = incoming.seq,
+                            timestamp = incoming.timestamp,
+                            action = 1,
+                            flags = FeatureFlags(),
+                        ),
+                    ) == true
+                    if (sent) {
+                        protocolReady = true
+                        handshakeJob?.cancel()
+                        handshakeJob = null
+                    }
+                } else if (incoming.action == 1) {
+                    protocolReady = true
+                    handshakeJob?.cancel()
+                    handshakeJob = null
+                }
+                true
+            }
+
+            is FileTransferCodec.Incoming.Request,
+            is FileTransferCodec.Incoming.Response,
+            -> {
+                fileTransfer.onMessage(bytes)
+                true
+            }
+
+            FileTransferCodec.Incoming.Other -> false
+        }
+    }
+
+    private fun maybeStartHandshake() {
+        if (protocolReady || handshakeJob?.isActive == true) return
+        if (!dataChannels.containsKey(UuRtcClient.CONTROL_CHANNEL) ||
+            !dataChannels.containsKey(UuRtcClient.TEXT_CHANNEL)
+        ) {
+            return
+        }
+        handshakeJob = scope.launch {
+            repeat(HANDSHAKE_ATTEMPTS) {
+                if (protocolReady) return@launch
+                val sent = rtc?.sendBinary(
+                    UuRtcClient.CONTROL_CHANNEL,
+                    FileTransferCodec.encodeAction(
+                        seq = protocolSequence++,
+                        timestamp = System.currentTimeMillis(),
+                        action = 0,
+                    ),
+                ) == true
+                if (!sent) return@launch
+                delay(500)
+            }
         }
     }
 
@@ -858,6 +996,11 @@ class SessionController(
         disconnectJob = null
         closing = true
         stopStats()
+        protocolReady = false
+        protocolSequence = 1L
+        handshakeJob?.cancel()
+        handshakeJob = null
+        fileTransfer.reset()
         signaling?.close()
         signaling = null
         rtc?.close()
@@ -896,5 +1039,6 @@ class SessionController(
         const val KEEPALIVE_MS = 500L
         const val DISCONNECT_GRACE_MS = 5000L
         const val MAX_RECONNECT = 3
+        const val HANDSHAKE_ATTEMPTS = 12
     }
 }

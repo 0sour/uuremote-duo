@@ -4,7 +4,7 @@ package com.sour.duoremote.protocol.proto
  * Minimal protobuf writer for com.remote.store.proto.Connect / Main.
  *
  * Reconstructed from the TV 3.5.0 protocol:
- *   Main { 1: 1, 2: -1, 3: Capture, 4: Decoder, 8: 2 }
+ *   Main { 1: 1, 2: -1, 3: Capture, 4: Decoder, 8: 2, 11: FeatureFlag }
  *   Capture { 1: fps-class, 2: quality, 3: 1, 4: 2, 5: Resolution, 6: Resolution }
  *   Decoder { 1: fps, 2: 1, 3: width, 4: height }
  *   Resolution { 1: width, 2: height }
@@ -20,6 +20,7 @@ object ConnectOptions {
         quality: Int = 3,
         maxBitrateMbps: Int = 0,
         followLocal: Boolean = false,
+        features: FeatureFlags = FeatureFlags(),
     ): ByteArray {
         require(width in 16..7680 && height in 16..4320) { "Invalid resolution" }
         require(fps in 1..240) { "Invalid fps" }
@@ -56,6 +57,7 @@ object ConnectOptions {
             message(3, capture)
             message(4, decoder)
             integer(8, 2)
+            message(11, features.encode())
         }.toByteArray()
     }
 

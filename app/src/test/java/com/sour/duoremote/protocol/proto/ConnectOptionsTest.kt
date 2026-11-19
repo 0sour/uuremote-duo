@@ -59,6 +59,17 @@ class ConnectOptionsTest {
     }
 
     @Test
+    fun advertisesFileTransferAndClipboardFeatures() {
+        val top = fields(ConnectOptions.encode())
+        val flags = fields(top.single(11).bytes)
+        assertEquals(4uL, flags.single(1).long)
+        assertEquals(3uL, flags.single(2).long)
+        assertEquals(2uL, flags.single(6).long)
+        assertEquals(2uL, flags.single(7).long)
+        assertEquals(3uL, flags.single(8).long)
+    }
+
+    @Test
     fun omitsBitrateWhenAutomatic() {
         val capture = fields(fields(ConnectOptions.encode(maxBitrateMbps = 0)).single(3).bytes)
         assertTrue(capture.none { it.number == 8 })

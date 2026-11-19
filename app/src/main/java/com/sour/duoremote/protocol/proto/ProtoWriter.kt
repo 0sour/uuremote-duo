@@ -22,6 +22,10 @@ class ProtoWriter {
         message(field, value.toByteArray(Charsets.UTF_8))
     }
 
+    fun boolean(field: Int, value: Boolean) {
+        if (value) integer(field, 1)
+    }
+
     private fun varint(value: Long) {
         var current = value
         while (true) {

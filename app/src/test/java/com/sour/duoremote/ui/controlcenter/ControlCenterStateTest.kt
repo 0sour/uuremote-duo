@@ -90,12 +90,12 @@ class ControlCenterStateTest {
     }
 
     @Test
-    fun moreGuideOpensHelpAndDisabledEntriesDoNothing() {
+    fun moreGuideOpensHelpAndFilesOpensBrowser() {
         val state = ControlCenterState()
         state.open(base)
 
         assertTrue(state.adjust(ControlField.GUIDE, 1, base).openHelp)
-        assertFalse(state.adjust(ControlField.FILES, 1, base).handled)
+        assertTrue(state.adjust(ControlField.FILES, 1, base).openFiles)
         assertFalse(state.adjust(ControlField.HDR, 1, base).handled)
     }
 
@@ -111,7 +111,9 @@ class ControlCenterStateTest {
         state.moveGroup(3)
         assertEquals(ControlGroup.MORE, state.group)
         val more = state.rows(base)
-        assertTrue(more.first { it.field == ControlField.FILES }.tag == "后续")
-        assertFalse(more.first { it.field == ControlField.FILES }.enabled)
+        assertTrue(more.first { it.field == ControlField.FILES }.enabled)
+        assertEquals("打开", more.first { it.field == ControlField.FILES }.value)
+        assertTrue(more.first { it.field == ControlField.DISPLAYS }.tag == "后续")
+        assertFalse(more.first { it.field == ControlField.DISPLAYS }.enabled)
     }
 }

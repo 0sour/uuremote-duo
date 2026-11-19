@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <b>Status: development</b> · v0.2.0-dev · Android 8.0+ · GPL-3.0
+  <b>Status: development</b> · v0.3.0-dev · Android 8.0+ · GPL-3.0
 </p>
 
 > **开发中，暂不发布 Release，也不在仓库提供 APK。** 当前版本已在 Retroid Pocket Duo 上完成串流、控制中心、单屏模式和手柄焦点验收，但仍有部分边界功能未实现或未做故障注入测试。
@@ -49,14 +49,14 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 
 | 项目 | 状态 |
 | --- | --- |
-| 版本 | `0.2.0`（development，versionCode 2） |
+| 版本 | `0.3.0`（development，versionCode 3） |
 | 主要验证设备 | Retroid Pocket Duo（双屏 1920×1080 + 1280×960，Android 掌机） |
 | 单屏模式 | 上屏 Activity / 下屏 Presentation 均可作为唯一屏 |
-| 自动测试 | 66 个 JVM 单测通过 |
+| 自动测试 | 80 个 JVM 单测通过 |
 | 构建 | debug / R8 release（默认未签名）通过；lint 通过 |
 | 发布 | **没有 GitHub Release，没有随仓库分发的 APK** |
 | 网络验收 | 1080p60 / 720p30、控制中心重连、仅观看、fit/fill 缩放已真机验证 |
-| 尚未复测 | 断网自动重连、剪贴板双向、手柄震动、双屏热插拔、码率逐档 |
+| 尚未复测 | 文件传输真机/电脑端、断网自动重连、剪贴板双向、手柄震动、双屏热插拔、码率逐档 |
 
 ## 功能与边界
 
@@ -89,12 +89,13 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | SendToRom 兜底 | `text_input` 失败回退 TEXT 通道，未做真机故障注入 |
 | 双屏热插拔 | Presentation 随 display 增减重建，未做完整拔插压力测试 |
 | 码率逐档 | 自动 / 20 / 50 / 100 Mbps 选项存在，未逐档长期观察 |
+| 文件传输 MVP | 控制中心「更多」入口；远端目录浏览、SAF 单文件上传/下载、仅观看禁用、超时/取消；**未在 RP Duo + Windows 电脑端验收**；无文件夹/拖放/下载续传 |
 
 ### 明确不做（v1 边界）
 
 | 功能 | 原因 / 计划 |
 | --- | --- |
-| 文件传输、拖放 | 需要 FILE 通道与电脑端配合，后续 |
+| 文件夹批量传输、拖放、剪贴板文件 | 单文件上下传已落地；批量/目录树/拖放后续 |
 | 多显示器 / 超级屏 / 虚拟屏 | 需要 STREAMER 多流与电脑端能力，后续 |
 | HDR / 4K / 144Hz / H.265 / AV1 | 需要协议档位、编码器与硬解能力，后续 |
 | 远程开机 / 重启 / 关机 / WOL | 需要电脑端 RPC，后续 |
@@ -117,7 +118,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 实时 | `io.github.webrtc-sdk:android:125.6422.07`（H.264 / Opus） |
 | 存储 | DataStore Preferences；EncryptedSharedPreferences / Android Keystore 保存敏感材料 |
 | 二维码 | ZXing core `3.5.3` |
-| 测试 | JUnit 4，MockWebServer；66 个 JVM 单测 |
+| 测试 | JUnit 4，MockWebServer；80 个 JVM 单测 |
 | CI | GitHub Actions：单测 + debug APK artifact；**不创建 Release** |
 
 ## 架构
@@ -131,8 +132,10 @@ flowchart TB
     R --> S["设置 · 7 类"]
     R --> AC["账号"]
     R --> CC["串流控制中心"]
+    R --> F["文件传输"]
     H --> SC["SessionController"]
     CC --> SC
+    F --> SC
     S --> DS["SettingsStore<br/>DataStore"]
     SC --> GP["手柄 / gpd_*"]
     SC --> RTC["WebRTC<br/>H.264 + Opus"]
@@ -182,6 +185,7 @@ uuremote-duo/
 │   ├── BUILDING.md                   # 构建与真机调试
 │   ├── feature-matrix.md             # 功能矩阵与边界
 │   ├── feature-parity.md             # 官方/第三方对照
+│   ├── file-transfer.md              # 文件传输协议与限制
 │   ├── v1-checklist.md               # 验收清单
 │   └── ui/                           # HTML 设计稿、图标、规范
 ├── .github/workflows/android.yml     # 单测 + debug 构建
@@ -252,8 +256,8 @@ GitHub Actions 在 `push` / `pull_request` 时运行 `:app:testDebugUnitTest` �
 
 | 阶段 | 内容 |
 | --- | --- |
-| 当前 | 完成 v0.2 边界验收：断网重连、剪贴板、震动、双屏热插拔 |
-| 下一步 | 文件传输、拖放；多显示器/超级屏（依赖电脑端能力） |
+| 当前 | 文件传输 MVP：远端目录浏览、单文件上传/下载；待真机/电脑端验收 |
+| 下一步 | 文件夹批量/拖放；多显示器/超级屏（依赖电脑端能力） |
 | 后续 | HDR/4K/H.265、远开/关机、终端/端口映射 |
 | P2 | 实体手柄→键鼠映射模板（不做虚拟按键/宏/轮盘） |
 

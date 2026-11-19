@@ -82,9 +82,10 @@ data class ControlAdjustment(
     val draft: PlaybackDraft? = null,
     val settings: DuoSettings? = null,
     val openHelp: Boolean = false,
+    val openFiles: Boolean = false,
 ) {
     val handled: Boolean
-        get() = draft != null || settings != null || openHelp
+        get() = draft != null || settings != null || openHelp || openFiles
 }
 
 /**
@@ -281,11 +282,12 @@ class ControlCenterState {
 
             ControlField.GUIDE -> ControlAdjustment(openHelp = true)
 
+            ControlField.FILES -> ControlAdjustment(openFiles = true)
+
             ControlField.HDR,
             ControlField.LOCK_SCREEN,
             ControlField.PRIVACY_SCREEN,
             ControlField.FINGERPRINT,
-            ControlField.FILES,
             ControlField.DISPLAYS,
             ControlField.TOOLS,
             -> ControlAdjustment()
@@ -489,11 +491,10 @@ fun controlRows(
         ),
         ControlRow(
             ControlField.FILES,
-            "远程文件",
-            "需要 FILE 通道与电脑端支持",
-            "后续",
-            enabled = false,
-            tag = "后续",
+            "文件传输",
+            if (settings.viewOnly) "仅观看模式下不可用" else "浏览远端目录，上传或下载单个文件",
+            if (settings.viewOnly) "仅观看" else "打开",
+            enabled = !settings.viewOnly,
         ),
         ControlRow(
             ControlField.DISPLAYS,
