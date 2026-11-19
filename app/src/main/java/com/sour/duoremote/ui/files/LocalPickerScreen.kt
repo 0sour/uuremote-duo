@@ -70,6 +70,7 @@ fun LocalPickerScreen(
     onRefresh: () -> Unit,
     onSelect: (Int) -> Unit,
     onToggleMark: (LocalEntry) -> Unit,
+    onUploadFolder: (LocalEntry) -> Unit,
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -79,6 +80,9 @@ fun LocalPickerScreen(
     val selectedIndex = state.index.coerceIn(0, maxOf(0, state.entries.size - 1))
     val selected = state.entries.getOrNull(selectedIndex)
     val markedCount = state.marked.size
+    val selectedFolder = state.mode == LocalPickerMode.UPLOAD &&
+        markedCount == 0 &&
+        selected?.isDirectory == true
 
     BackHandler(onBack = onBack)
     LaunchedEffect(state.entries.size) { state.clamp(state.entries.size) }
@@ -162,6 +166,8 @@ fun LocalPickerScreen(
                         onSelect = onSelect,
                         onOpen = onOpen,
                         onToggleMark = onToggleMark,
+                        onUploadFolder = onUploadFolder,
+                        showUploadFolders = state.mode == LocalPickerMode.UPLOAD,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -190,10 +196,13 @@ fun LocalPickerScreen(
                     actions = when (state.mode) {
                         LocalPickerMode.UPLOAD -> listOf(
                             DuoAction(
-                                if (markedCount > 0) "上传已选 $markedCount 个" else "上传选中文件",
+                                when {
+                                    markedCount > 0 -> "上传已选 $markedCount 个"
+                                    selectedFolder -> "上传此文件夹"
+                                    else -> "上传选中文件"
+                                },
                                 primary = true,
-                                enabled = (markedCount > 0 || (selected != null && !selected.isDirectory)) &&
-                                    !state.loading,
+                                enabled = (markedCount > 0 || selected != null) && !state.loading,
                             ),
                             DuoAction("关闭"),
                         )
@@ -209,7 +218,12 @@ fun LocalPickerScreen(
                     },
                     onAction = { index ->
                         when (index) {
-                            0 -> onConfirm()
+                            0 -> if (selectedFolder) {
+                                selected?.let(onUploadFolder)
+                            } else {
+                                onConfirm()
+                            }
+
                             else -> onBack()
                         }
                     },
@@ -439,6 +453,8 @@ private fun LocalEntryList(
     onSelect: (Int) -> Unit,
     onOpen: (LocalEntry) -> Unit,
     onToggleMark: (LocalEntry) -> Unit,
+    onUploadFolder: (LocalEntry) -> Unit,
+    showUploadFolders: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalDuoColors.current
@@ -506,7 +522,25 @@ private fun LocalEntryList(
                     color = colors.textTertiary,
                     maxLines = 1,
                 )
-                if (showMarks && !entry.isDirectory) {
+                if (showUploadFolders && entry.isDirectory) {
+                    Spacer(Modifier.width(6.dp))
+                    Box(
+                        Modifier
+                            .size(26.dp)
+                            .clickable {
+                                onSelect(index)
+                                onUploadFolder(entry)
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Outlined.Upload,
+                            contentDescription = "上传此文件夹",
+                            tint = colors.textTertiary,
+                            modifier = Modifier.size(17.dp),
+                        )
+                    }
+                } else if (showMarks && !entry.isDirectory) {
                     Spacer(Modifier.width(6.dp))
                     val marked = isMarked(entry)
                     Box(
@@ -539,7 +573,7 @@ private fun LocalFooter(state: LocalFilesUiState) {
             when {
                 state.authPrompt -> "B 授权 · A 返回 · X 使用应用目录"
                 state.mode == LocalPickerMode.UPLOAD ->
-                    "B 打开/上传 · A 返回 · X 刷新 · Y 多选 · L1/R1 切换目录"
+                    "B 打开/上传 · A 返回 · X 刷新 · Y 多选 · 文件夹右侧图标上传整个文件夹"
 
                 else -> "B 打开文件夹/保存 · A 返回 · X 刷新 · L1/R1 切换目录"
             },

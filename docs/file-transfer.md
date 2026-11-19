@@ -1,8 +1,9 @@
 # 文件传输（MVP）
 
-> 状态：协议、状态机、单测与 RP Duo + Windows 电脑端的目录浏览、单/多文件上下传、文件夹下载已验收。
-> 范围：远端目录浏览、单/多文件上传、单/多文件下载、文件夹递归下载。文件夹上传、拖放、
-> 剪贴板文件、下载断点续传不在本版。
+> 状态：协议、状态机、单测与 RP Duo + Windows 电脑端的目录浏览、单/多文件上下传、文件夹
+> 上下传已验收。
+> 范围：远端目录浏览、单/多文件上传、单/多文件下载、文件夹递归上传与下载。拖放、剪贴板
+> 文件、下载断点续传不在本版。
 >
 > 本机文件选择已改为 **app 内自建浏览页**：应用专属传输目录无需权限，另可选一次授权一个
 > 本机文件夹；之后每次上传/下载都不再启动系统文件管理器。
@@ -100,6 +101,40 @@ sequenceDiagram
 
 - 同名文件策略为 `FOS_SKIP`；host 返回 `skip=true` 时页面显示“已跳过同名文件”。
 - `resume_point > 0` 时跳过已上传字节后继续；没有实现暂停/续传 UI。
+
+## 文件夹上传
+
+```mermaid
+sequenceDiagram
+  participant D as DuoRemote
+  participant P as 被控 PC
+  D->>P: DirCreate(path=父目录)
+  P-->>D: OperationResult(path=父目录\新建文件夹)
+  D->>P: Rename(path=新建文件夹, new_name=完整目标路径)
+  P-->>D: OperationResult(path=完整目标路径)
+  Note over D,P: 每个子目录重复一次 DirCreate/Rename
+  loop 每个文件
+    D->>P: ReceiveRequest(path=目标目录, FileList)
+    P-->>D: ReceiveResponse(err=1)
+    D->>P: FileAsk(file_size)
+    P-->>D: FileConfirm
+    loop 64 KiB 块
+      D->>P: FileBlock(block_id 从 0)
+      P-->>D: BlockConfirm
+    end
+    D->>P: Complete(file)
+    D->>P: Complete(task)
+    P-->>D: Result
+  end
+```
+
+- host 的 `DirCreate` 会先在父目录创建一个“新建文件夹”，并在 `OperationResult.path` 返回
+  临时路径；随后 `Rename` 的 `new_name` 传完整目标路径，而不是仅传新名称。
+- app 先按本地目录树创建远端所有目录（包括空目录），再按文件逐个走现有单文件上传状态机；
+  每个文件的 `ReceiveRequest.path` 是它所属的远端子目录，文件名用 basename。
+- 本机扫描在 IO 线程完成，最多 64 层、5000 个文件；超过时提示失败，不会开始创建目录。
+- 应用目录内的文件夹上传已在 RP Duo 真机验收（`upload-src` → `C:/upload-src`，含
+  `sub/b.txt`）；授权 SAF 目录的上传/下载待验证。
 
 ## 下载
 
@@ -209,12 +244,13 @@ sequenceDiagram
 覆盖：
 
 - `FileTransferCodecTest`：Main/RPC 包络、目录/文件列表、zlib、块确认、feature flags。
-- `FileTransferEngineTest`：目录排序、上传逐块确认与双 Complete、下载块/回执 request_id、文件夹清单/逐文件写入、超时、路径边界。
+- `FileTransferEngineTest`：目录排序、上传逐块确认与双 Complete、下载块/回执 request_id、文件夹清单/逐文件写入、DirCreate+Rename 建目录、超时、路径边界。
 - `LocalFilesUiStateTest`：本机页打开/根切换、进入/上一级、选择、过期目录结果丢弃、授权提示。
 
 2026-11-19 RP Duo + Windows 电脑端实测：`C:\` 与 `C:\Users\Public` 目录浏览；应用目录
 上传/下载 27 B 文件；一次授权 `Documents/DuoRemoteTest` 后，从授权文件夹上传及下载到该文件夹
 均为 27 B；重名自动改为 `grant-test (1).txt`；授权页关闭后串流保持连接。文件夹下载验收：
 远端 `duo-folder-test`（`a.txt` 16 B、`sub/b.txt` 20 B）下载到应用目录，目录结构与内容一致。
-尚未实测 >100 MB 文件、取消/失败清理、15/30 秒超时和授权 SAF 目录的文件夹下载。真机验收项见
-[v1-checklist.md](v1-checklist.md) 第 9 节。
+文件夹上传验收：本机 `upload-src`（`a.txt` 16 B、`sub/b.txt` 21 B）上传到 `C:/upload-src`，
+电脑端目录结构与内容一致。尚未实测 >100 MB 文件、取消/失败清理、15/30 秒超时、空目录以及
+授权 SAF 目录的文件夹上下传。真机验收项见 [v1-checklist.md](v1-checklist.md) 第 9 节。

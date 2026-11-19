@@ -124,7 +124,7 @@ fun FilesScreen(
                 compact = !wide,
                 focusIndex = ui.tab.ordinal,
             )
-            val message = ui.error ?: state.error ?: state.notice
+            val message = ui.error ?: state.error ?: ui.notice ?: state.notice
             if (message != null) {
                 DuoBanner(
                     text = message,

@@ -22,6 +22,8 @@ object LocalFileAccess {
 
     private const val APP_FOLDER = "DuoRemote"
     private const val MIME_FALLBACK = "application/octet-stream"
+    private const val MAX_TREE_DEPTH = 64
+    private const val MAX_TREE_FILES = 5_000
 
     fun appRoot(context: Context): LocalLocation {
         val base = context.getExternalFilesDir(null) ?: context.filesDir
@@ -87,6 +89,100 @@ object LocalFileAccess {
                     ?: -1L
             }
         }.getOrDefault(-1L)
+    }
+
+    /**
+     * Recursively collects a local folder for upload. Relative paths use `/` so they can be
+     * turned into remote paths without ambiguity. Returns null when the tree is unreadable or
+     * exceeds the file-count guard.
+     */
+    fun collectTree(
+        context: Context,
+        entry: LocalEntry,
+        treeUri: String? = null,
+    ): LocalTreeUpload? {
+        if (!entry.isDirectory) return null
+        val files = ArrayList<LocalTreeFile>()
+        val folders = ArrayList<String>()
+        val appContext = context.applicationContext
+        if (entry.documentId == null) {
+            val root = File(entry.path)
+            val walk = runCatching {
+                root.walkTopDown().maxDepth(MAX_TREE_DEPTH).forEach { file ->
+                    if (file == root) return@forEach
+                    val relative = file.relativeTo(root).invariantSeparatorsPath
+                    if (relative.isBlank()) return@forEach
+                    if (file.isDirectory) {
+                        folders += relative
+                    } else {
+                        require(files.size < MAX_TREE_FILES) { "too many files" }
+                        files += LocalTreeFile(
+                            relativePath = relative,
+                            name = file.name,
+                            size = file.length(),
+                            modifiedTime = file.lastModified() / 1000L,
+                            open = { runCatching { file.inputStream() }.getOrNull() },
+                        )
+                    }
+                }
+            }
+            return if (walk.isSuccess) LocalTreeUpload(files, folders) else null
+        }
+
+        val uri = treeUri?.let(Uri::parse) ?: return null
+        if (!hasTreePermission(appContext, uri)) return null
+        val location = LocalLocation(
+            root = LocalRootKind.AUTHORIZED,
+            label = entry.name,
+            path = uri.toString(),
+            treeUri = uri.toString(),
+            documentId = entry.documentId,
+        )
+        val walk = runCatching {
+            collectTreeFolder(appContext, uri, location, "", 0, files, folders)
+        }
+        return if (walk.isSuccess && walk.getOrDefault(false)) LocalTreeUpload(files, folders) else null
+    }
+
+    private fun collectTreeFolder(
+        context: Context,
+        treeUri: Uri,
+        location: LocalLocation,
+        prefix: String,
+        depth: Int,
+        files: MutableList<LocalTreeFile>,
+        folders: MutableList<String>,
+    ): Boolean {
+        if (depth > MAX_TREE_DEPTH) return false
+        for (child in list(context, location)) {
+            val relative = if (prefix.isEmpty()) child.name else "$prefix/${child.name}"
+            if (child.isDirectory) {
+                folders += relative
+                val childId = child.documentId ?: return false
+                if (!collectTreeFolder(
+                        context,
+                        treeUri,
+                        location.copy(label = child.name, documentId = childId),
+                        relative,
+                        depth + 1,
+                        files,
+                        folders,
+                    )
+                ) {
+                    return false
+                }
+            } else {
+                if (files.size >= MAX_TREE_FILES) return false
+                files += LocalTreeFile(
+                    relativePath = relative,
+                    name = child.name,
+                    size = child.size.coerceAtLeast(0L),
+                    modifiedTime = child.modifiedTime,
+                    open = { openInput(context, child) },
+                )
+            }
+        }
+        return true
     }
 
     /**
@@ -456,6 +552,19 @@ private fun safePath(value: String): List<String>? {
     val segments = parts.map { safeSegment(it) ?: return null }
     return segments
 }
+
+data class LocalTreeFile(
+    val relativePath: String,
+    val name: String,
+    val size: Long,
+    val modifiedTime: Long,
+    val open: () -> InputStream?,
+)
+
+data class LocalTreeUpload(
+    val files: List<LocalTreeFile>,
+    val folders: List<String>,
+)
 
 data class LocalOutput(
     val name: String,

@@ -67,6 +67,19 @@ sealed interface FileRequest {
         val id: TaskId,
         val path: String,
     ) : FileRequest
+
+    /** RPC id is a plain request id, not a [TaskId], because the host answers with an operation result. */
+    data class Rename(
+        val requestId: Long,
+        val path: String,
+        val newName: String,
+    ) : FileRequest
+
+    /** Asks the host to create a folder and returns its generated path in an operation result. */
+    data class DirCreate(
+        val requestId: Long,
+        val path: String,
+    ) : FileRequest
 }
 
 sealed interface FileResponse {
@@ -110,6 +123,12 @@ sealed interface FileResponse {
         val entries: List<FileEntry>,
         val fileError: Int,
         val dirData: ByteArray = ByteArray(0),
+    ) : FileResponse
+
+    data class OperationResult(
+        val fileError: Int,
+        val errMsg: String,
+        val path: String,
     ) : FileResponse
 }
 
@@ -251,6 +270,13 @@ object FileTransferCodec {
                 message(1, encodeTask(request.id))
                 text(2, request.path)
             }.toByteArray())
+            is FileRequest.Rename -> message(5, ProtoWriter().apply {
+                text(1, request.path)
+                text(2, request.newName)
+            }.toByteArray())
+            is FileRequest.DirCreate -> message(6, ProtoWriter().apply {
+                text(1, request.path)
+            }.toByteArray())
         }
     }.toByteArray()
 
@@ -293,6 +319,11 @@ object FileTransferCodec {
                 if (response.entries.isEmpty() && response.dirData.isNotEmpty()) {
                     message(5, response.dirData)
                 }
+            }.toByteArray())
+            is FileResponse.OperationResult -> message(5, ProtoWriter().apply {
+                integer(1, response.fileError.toLong())
+                if (response.errMsg.isNotEmpty()) text(2, response.errMsg)
+                if (response.path.isNotEmpty()) text(3, response.path)
             }.toByteArray())
         }
     }.toByteArray()
@@ -428,6 +459,8 @@ object FileTransferCodec {
                 4 -> parseBlock(field.bytes)
                 9 -> parseComplete(field.bytes)
                 10 -> parseReadDir(field.bytes)
+                5 -> parseRename(field.bytes)
+                6 -> parseDirCreate(field.bytes)
                 else -> result
             }
         }
@@ -443,6 +476,7 @@ object FileTransferCodec {
                 2 -> parseSendResponse(field.bytes)
                 3 -> parseConfirm(field.bytes)
                 4 -> parseBlockConfirm(field.bytes)
+                5 -> parseOperationResult(field.bytes)
                 6 -> parseResult(field.bytes)
                 7 -> parseDirectory(field.bytes)
                 else -> result
@@ -537,6 +571,42 @@ object FileTransferCodec {
             }
         }
         return FileRequest.ReadDir(id, path)
+    }
+
+    private fun parseRename(data: ByteArray): FileRequest.Rename {
+        var path = ""
+        var newName = ""
+        readFields(data) { field ->
+            when (field.number) {
+                1 -> if (field.wire == 2) path = field.bytes.toString(Charsets.UTF_8)
+                2 -> if (field.wire == 2) newName = field.bytes.toString(Charsets.UTF_8)
+            }
+        }
+        return FileRequest.Rename(0L, path, newName)
+    }
+
+    private fun parseDirCreate(data: ByteArray): FileRequest.DirCreate {
+        var path = ""
+        readFields(data) { field ->
+            if (field.number == 1 && field.wire == 2) {
+                path = field.bytes.toString(Charsets.UTF_8)
+            }
+        }
+        return FileRequest.DirCreate(0L, path)
+    }
+
+    private fun parseOperationResult(data: ByteArray): FileResponse.OperationResult {
+        var error = 0
+        var message = ""
+        var path = ""
+        readFields(data) { field ->
+            when (field.number) {
+                1 -> if (field.wire == 0) error = field.integer.toInt()
+                2 -> if (field.wire == 2) message = field.bytes.toString(Charsets.UTF_8)
+                3 -> if (field.wire == 2) path = field.bytes.toString(Charsets.UTF_8)
+            }
+        }
+        return FileResponse.OperationResult(error, message, path)
     }
 
     private fun parseReceiveResponse(data: ByteArray): FileResponse.ReceiveResponse {

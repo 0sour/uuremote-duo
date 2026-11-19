@@ -576,6 +576,7 @@ class MainActivity : ComponentActivity() {
                 onRefresh = ::refreshLocal,
                 onSelect = localFilesUi::select,
                 onToggleMark = localFilesUi::toggleMarked,
+                onUploadFolder = ::uploadLocalFolder,
                 onConfirm = ::confirmLocalPicker,
                 modifier = modifier,
             )
@@ -943,6 +944,7 @@ class MainActivity : ComponentActivity() {
         val client = sessionController ?: return
         if (duoSettings.viewOnly) return
         filesUi.error = null
+        filesUi.notice = null
         localFilesUi.open(
             mode = LocalPickerMode.UPLOAD,
             remoteDir = client.fileState.path,
@@ -956,7 +958,7 @@ class MainActivity : ComponentActivity() {
         if (duoSettings.viewOnly) return
         val files = entries.filterNot { it.isDirectory }
         if (files.isEmpty()) {
-            filesUi.error = "文件夹下载暂未支持"
+            filesUi.error = "请选择文件"
             return
         }
         val pending = files.map { entry ->
@@ -969,6 +971,7 @@ class MainActivity : ComponentActivity() {
             )
         }
         filesUi.error = null
+        filesUi.notice = null
         localFilesUi.open(
             mode = LocalPickerMode.DOWNLOAD,
             remoteDir = client.fileState.path,
@@ -989,6 +992,7 @@ class MainActivity : ComponentActivity() {
             FileTransferState.childOf(client.fileState.path, entry.name)
         }
         filesUi.error = null
+        filesUi.notice = null
         localFilesUi.open(
             mode = LocalPickerMode.DOWNLOAD,
             remoteDir = client.fileState.path,
@@ -1010,6 +1014,91 @@ class MainActivity : ComponentActivity() {
             LocalPickerMode.UPLOAD -> confirmLocalUpload()
             LocalPickerMode.DOWNLOAD -> confirmLocalDownload()
         }
+    }
+
+    /**
+     * Uploads one local folder tree: create the remote directory structure first, then queue
+     * every file into its matching remote directory. The local scan runs off the main thread.
+     */
+    private fun uploadLocalFolder(entry: LocalEntry) {
+        val client = sessionController
+        if (client == null || duoSettings.viewOnly) {
+            localFilesUi.reportError("会话未连接")
+            return
+        }
+        if (!entry.isDirectory) {
+            localFilesUi.reportError("请选择一个文件夹")
+            return
+        }
+        val location = localFilesUi.current
+        if (location == null) {
+            localFilesUi.reportError("无法读取当前文件夹")
+            return
+        }
+        val remoteParent = localFilesUi.remoteDir.ifBlank { client.fileState.path }
+        if (remoteParent.isBlank()) {
+            localFilesUi.reportError("远端目录无效")
+            return
+        }
+        val treeUri = location.treeUri.takeIf { location.root == LocalRootKind.AUTHORIZED }
+        localFilesUi.reportError(null)
+        localFilesUi.note("正在扫描文件夹…")
+        lifecycleScope.launch {
+            val tree = withContext(Dispatchers.IO) {
+                LocalFileAccess.collectTree(this@MainActivity, entry, treeUri)
+            }
+            if (tree == null) {
+                localFilesUi.reportError("无法读取文件夹，或文件数量超过 5000")
+                return@launch
+            }
+            if (tree.files.isEmpty() && tree.folders.isEmpty()) {
+                localFilesUi.reportError("文件夹为空")
+                return@launch
+            }
+            val remoteRoot = remoteJoin(remoteParent, entry.name)
+            val folders = buildList {
+                add(remoteRoot)
+                tree.folders.forEach { add(remoteJoin(remoteRoot, it)) }
+            }
+            localFilesUi.close()
+            filesUi.error = null
+            filesUi.notice = null
+            filesUi.tab = FilesTab.QUEUE
+            val prepared = client.prepareRemoteFolders(folders) { ok, message ->
+                if (!ok) {
+                    filesUi.error = message ?: "无法创建远端文件夹"
+                    return@prepareRemoteFolders
+                }
+                if (tree.files.isEmpty()) {
+                    filesUi.notice = "已创建远端空文件夹 ${entry.name}"
+                    return@prepareRemoteFolders
+                }
+                val sources = tree.files.map { file ->
+                    val parent = file.relativePath.substringBeforeLast('/', "")
+                    UploadSource(
+                        name = file.name,
+                        size = file.size,
+                        modifiedTime = file.modifiedTime,
+                        open = file.open,
+                        remoteDir = if (parent.isEmpty()) {
+                            remoteRoot
+                        } else {
+                            remoteJoin(remoteRoot, parent)
+                        },
+                    )
+                }
+                if (!client.uploadFiles(sources, remoteRoot)) {
+                    filesUi.error = client.fileState.error ?: "无法开始上传"
+                }
+            }
+            if (!prepared) filesUi.error = client.fileState.error ?: "无法创建远端文件夹"
+        }
+    }
+
+    private fun remoteJoin(parent: String, child: String): String {
+        val base = parent.trimEnd('\\', '/')
+        val relative = child.trim().replace('/', '\\').trimStart('\\')
+        return "$base\\$relative"
     }
 
     private fun confirmLocalUpload() {
@@ -2281,7 +2370,7 @@ class MainActivity : ComponentActivity() {
                 if (localFilesUi.mode == LocalPickerMode.UPLOAD) {
                     localFilesUi.selected?.let { entry ->
                         if (entry.isDirectory) {
-                            localFilesUi.reportError("请选择文件后再多选")
+                            uploadLocalFolder(entry)
                         } else {
                             localFilesUi.toggleMarked(entry)
                         }

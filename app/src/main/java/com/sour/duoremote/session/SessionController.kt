@@ -73,6 +73,8 @@ data class UploadSource(
     val size: Long,
     val modifiedTime: Long,
     val open: () -> InputStream?,
+    /** Per-file remote directory; blank falls back to the batch directory. */
+    val remoteDir: String = "",
 )
 
 /** One download item; the local file is created lazily when the batch reaches this file. */
@@ -425,6 +427,53 @@ class SessionController(
     }
 
     /**
+     * Creates a chain of remote folders before an upload. Each target is a full remote path;
+     * creation is sequential so failures identify the exact directory.
+     */
+    fun prepareRemoteFolders(
+        targets: List<String>,
+        onDone: (Boolean, String?) -> Unit,
+    ): Boolean {
+        if (viewOnly) {
+            onDone(false, "仅观看模式下不能修改远端文件")
+            return false
+        }
+        if (hasActiveTransfer()) {
+            onDone(false, "请先等待当前传输结束")
+            return false
+        }
+        if (targets.isEmpty()) {
+            onDone(true, null)
+            return true
+        }
+        fileState = fileState.copy(
+            error = null,
+            notice = "正在创建远端文件夹（${targets.size} 个）",
+        )
+        fun step(index: Int) {
+            if (index >= targets.size) {
+                onDone(true, null)
+                return
+            }
+            val target = targets[index]
+            val started = fileTransfer.createFolder(target) { ok, message ->
+                scope.launch {
+                    if (ok) {
+                        step(index + 1)
+                    } else {
+                        onDone(false, message ?: "无法创建 $target")
+                    }
+                }
+            }
+            if (!started) {
+                onDone(false, fileState.error ?: "无法创建远端文件夹")
+            }
+        }
+        step(0)
+        return true
+    }
+
+    /**
      * Downloads a remote folder. [openOutput] receives the manifest index (1-based) and the
      * relative file info and must return a writable local file.
      */
@@ -484,7 +533,7 @@ class SessionController(
             size = source.size,
             modifiedTime = source.modifiedTime,
             input = input,
-            remoteDir = uploadBatchDir ?: fileState.path,
+            remoteDir = source.remoteDir.ifBlank { uploadBatchDir ?: fileState.path },
             batchIndex = batchCursor,
             batchTotal = batch.size,
         )

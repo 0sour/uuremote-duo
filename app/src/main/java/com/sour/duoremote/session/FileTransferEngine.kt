@@ -77,6 +77,8 @@ class FileTransferEngine(
     private var upload: UploadSession? = null
     private var download: DownloadSession? = null
     private var folderDownload: FolderDownloadSession? = null
+    private var folderCreate: FolderCreateSession? = null
+    private var operationId = 900_000_000L
     private var listStartedAt = 0L
     private var lastActivityAt = 0L
 
@@ -283,8 +285,46 @@ class FileTransferEngine(
         return sent
     }
 
+    /**
+     * Creates one remote directory. The host first creates a temporary directory and returns its
+     * generated path; a second rename RPC turns it into [target]. Both responses are matched by
+     * their RPC request id. Calls [onDone] with the final path on success or an error message.
+     */
+    @Synchronized
+    fun createFolder(target: String, onDone: (Boolean, String?) -> Unit): Boolean {
+        if (state.transfer?.status in ACTIVE_STATUSES || folderCreate != null) {
+            publish(state.copy(error = "请先等待当前传输结束"))
+            return false
+        }
+        val normalized = target.trim().trimEnd('\\', '/')
+        val split = normalized.lastIndexOfAny(charArrayOf('\\', '/'))
+        if (split <= 0 || !validRemoteName(normalized.substring(split + 1))) {
+            publish(state.copy(error = "远端文件夹路径无效"))
+            return false
+        }
+        var parent = normalized.substring(0, split)
+        if (parent.endsWith(':')) parent += "\\"
+        val id = nextOperationId()
+        folderCreate = FolderCreateSession(
+            target = normalized,
+            requestId = id,
+            startedAt = now(),
+            onDone = onDone,
+        )
+        val sent = sendRequest(FileRequest.DirCreate(id, parent), id)
+        if (!sent) {
+            folderCreate = null
+            publish(state.copy(error = "文件通道未就绪"))
+        }
+        return sent
+    }
+
     @Synchronized
     fun cancel() {
+        folderCreate?.let {
+            folderCreate = null
+            it.onDone(false, "已取消")
+        }
         val active = state.transfer ?: return
         if (active.status !in ACTIVE_STATUSES) return
         val id = active.id
@@ -307,6 +347,7 @@ class FileTransferEngine(
         closeUpload()
         closeDownload()
         closeFolderDownload()
+        folderCreate = null
         pendingListId = null
         publish(FileTransferState())
     }
@@ -318,6 +359,10 @@ class FileTransferEngine(
         if (pendingListId != null && current - listStartedAt > LIST_TIMEOUT_MS) {
             pendingListId = null
             publish(state.copy(loading = false, error = "读取远端目录超时"))
+        }
+        val create = folderCreate
+        if (create != null && current - create.startedAt > FOLDER_CREATE_TIMEOUT_MS) {
+            finishFolderCreate(false, "创建远端文件夹超时")
         }
         val active = state.transfer ?: return
         if (active.status !in ACTIVE_STATUSES || current - lastActivityAt <= TRANSFER_TIMEOUT_MS) return
@@ -366,7 +411,7 @@ class FileTransferEngine(
             }
 
             is FileTransferCodec.Incoming.Response -> {
-                handleResponse(incoming.response)
+                handleResponse(incoming.requestId, incoming.response)
                 true
             }
 
@@ -376,8 +421,12 @@ class FileTransferEngine(
         }
     }
 
-    private fun handleResponse(response: FileResponse) {
+    private fun handleResponse(requestId: Long, response: FileResponse) {
         lastActivityAt = now()
+        if (response is FileResponse.OperationResult) {
+            handleFolderCreateResult(requestId, response)
+            return
+        }
         when (response) {
             is FileResponse.Directory -> handleDirectory(response)
             is FileResponse.ReceiveResponse -> {
@@ -510,7 +559,37 @@ class FileTransferEngine(
                     failUpload(response.errMsg.ifBlank { "远端传输失败（${response.fileError}）" })
                 }
             }
+
+            is FileResponse.OperationResult -> Unit
         }
+    }
+
+    private fun handleFolderCreateResult(requestId: Long, result: FileResponse.OperationResult) {
+        val session = folderCreate ?: return
+        if (requestId != session.requestId) return
+        if (result.fileError != FileTransferCodec.FILE_TRANSFER_ERROR_OK) {
+            finishFolderCreate(
+                false,
+                result.errMsg.ifBlank { "远端拒绝创建文件夹（${result.fileError}）" },
+            )
+            return
+        }
+        if (!session.renamed) {
+            if (result.path.isBlank()) {
+                finishFolderCreate(false, "远端未返回新文件夹路径")
+                return
+            }
+            val id = nextOperationId()
+            session.requestId = id
+            session.renamed = true
+            val sent = sendRequest(
+                FileRequest.Rename(id, result.path, session.target),
+                id,
+            )
+            if (!sent) finishFolderCreate(false, "文件通道未就绪")
+            return
+        }
+        finishFolderCreate(true, result.path.ifBlank { session.target })
     }
 
     private fun handleRequest(requestId: Long, request: FileRequest) {
@@ -880,13 +959,16 @@ class FileTransferEngine(
         onState(next)
     }
 
-    private fun sendRequest(request: FileRequest): Boolean = runCatching {
+    private fun sendRequest(
+        request: FileRequest,
+        requestId: Long = requestIdFor(request),
+    ): Boolean = runCatching {
         lastActivityAt = now()
         send(
             FileTransferCodec.encodeMainRequest(
                 seq = nextSequence(),
                 timestamp = now(),
-                requestId = requestIdFor(request),
+                requestId = requestId,
                 request = request,
             ),
         )
@@ -899,6 +981,8 @@ class FileTransferEngine(
         is FileRequest.Block -> request.id.taskId.toLong()
         is FileRequest.Complete -> request.id.taskId.toLong()
         is FileRequest.ReadDir -> request.id.taskId.toLong()
+        is FileRequest.Rename -> request.requestId
+        is FileRequest.DirCreate -> request.requestId
     }
 
     private fun sendResponse(requestId: Long, response: FileResponse): Boolean = runCatching {
@@ -965,6 +1049,34 @@ class FileTransferEngine(
         failTransfer(message)
     }
 
+    private fun nextOperationId(): Long = operationId++
+
+    private fun finishFolderCreate(success: Boolean, message: String?) {
+        val session = folderCreate ?: return
+        folderCreate = null
+        if (!success && !message.isNullOrBlank()) {
+            publish(state.copy(error = message))
+        }
+        session.onDone(success, message)
+    }
+
+    private fun validRemoteName(name: String): Boolean {
+        val trimmed = name.trim()
+        return trimmed.isNotEmpty() &&
+            trimmed != "." &&
+            trimmed != ".." &&
+            !trimmed.contains('\\') &&
+            !trimmed.contains('/')
+    }
+
+    private data class FolderCreateSession(
+        val target: String,
+        var requestId: Long,
+        val startedAt: Long,
+        val onDone: (Boolean, String?) -> Unit,
+        var renamed: Boolean = false,
+    )
+
     private data class UploadSession(
         val id: Int,
         val name: String,
@@ -1005,6 +1117,7 @@ class FileTransferEngine(
         const val MAX_BLOCK_BYTES = 1024 * 1024
         const val STRATEGY_SKIP = 3
         const val LIST_TIMEOUT_MS = 15_000L
+        const val FOLDER_CREATE_TIMEOUT_MS = 15_000L
         const val TRANSFER_TIMEOUT_MS = 30_000L
         val ACTIVE_STATUSES = setOf(
             TransferStatus.PREPARING,

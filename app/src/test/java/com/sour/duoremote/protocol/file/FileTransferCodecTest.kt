@@ -51,6 +51,40 @@ class FileTransferCodecTest {
     }
 
     @Test
+    fun dirCreateAndRenameRoundTripAsOperationRpc() {
+        val dir = FileTransferCodec.parseMain(
+            FileTransferCodec.encodeMainRequest(1, 2, 77, FileRequest.DirCreate(0, "C:/")),
+        ) as FileTransferCodec.Incoming.Request
+        assertEquals(77L, dir.requestId)
+        val create = dir.request as FileRequest.DirCreate
+        assertEquals("C:/", create.path)
+
+        val rename = FileTransferCodec.parseMain(
+            FileTransferCodec.encodeMainRequest(
+                3,
+                4,
+                88,
+                FileRequest.Rename(0, "C:/新建文件夹", "C:/Projects"),
+            ),
+        ) as FileTransferCodec.Incoming.Request
+        assertEquals(88L, rename.requestId)
+        val moved = rename.request as FileRequest.Rename
+        assertEquals("C:/新建文件夹", moved.path)
+        assertEquals("C:/Projects", moved.newName)
+
+        val result = FileTransferCodec.parseMain(
+            FileTransferCodec.encodeMainResponse(
+                5,
+                6,
+                88,
+                FileResponse.OperationResult(1, "", "C:/Projects"),
+            ),
+        ) as FileTransferCodec.Incoming.Response
+        assertEquals(88L, result.requestId)
+        assertEquals(FileResponse.OperationResult(1, "", "C:/Projects"), result.response)
+    }
+
+    @Test
     fun directoryResponseDecodesDirectAndCompressedEntries() {
         val entries = listOf(
             FileEntry(0, "文件夹", 0, 0, "C:\\文件夹"),

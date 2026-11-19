@@ -19,6 +19,7 @@ class FilesUiState {
     var tab by mutableStateOf(FilesTab.BROWSE)
     var index by mutableStateOf(0)
     var error by mutableStateOf<String?>(null)
+    var notice by mutableStateOf<String?>(null)
     var marked by mutableStateOf<Map<String, FileEntry>>(emptyMap())
         private set
 
@@ -40,6 +41,7 @@ class FilesUiState {
         tab = FilesTab.BROWSE
         index = 0
         error = null
+        notice = null
         marked = emptyMap()
     }
 

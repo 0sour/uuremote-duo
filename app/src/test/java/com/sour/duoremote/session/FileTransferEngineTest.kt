@@ -254,6 +254,61 @@ class FileTransferEngineTest {
     }
 
     @Test
+    fun createFolderUsesDirCreateThenRename() {
+        val sent = mutableListOf<ByteArray>()
+        var finished: Pair<Boolean, String?>? = null
+        val engine = FileTransferEngine(send = { sent += it; true }, now = { 1L })
+        val target = winPath("C:", "Users", "Public", "duo-up")
+
+        assertTrue(
+            engine.createFolder(target) { ok, message ->
+                finished = ok to message
+            },
+        )
+        val create = lastRequest(sent) as FileRequest.DirCreate
+        assertEquals(winPath("C:", "Users", "Public"), create.path)
+
+        val createId = lastRequestEnvelope(sent).requestId
+        engine.onMessage(
+            operationResult(
+                createId,
+                FileResponse.OperationResult(1, "", winPath("C:", "Users", "Public", "新建文件夹")),
+            ),
+        )
+        val rename = lastRequest(sent) as FileRequest.Rename
+        assertEquals(winPath("C:", "Users", "Public", "新建文件夹"), rename.path)
+        assertEquals(target, rename.newName)
+
+        val renameId = lastRequestEnvelope(sent).requestId
+        engine.onMessage(
+            operationResult(
+                renameId,
+                FileResponse.OperationResult(1, "", target),
+            ),
+        )
+        assertEquals(true, finished?.first)
+        assertEquals(target, finished?.second)
+        assertNull(engine.state.error)
+    }
+
+    @Test
+    fun folderCreationTimesOut() {
+        var clock = 0L
+        var finished: Pair<Boolean, String?>? = null
+        val engine = FileTransferEngine(send = { true }, now = { clock })
+        assertTrue(
+            engine.createFolder(winPath("D:", "inbox")) { ok, message ->
+                finished = ok to message
+            },
+        )
+        clock = 16_000L
+        engine.tick()
+        assertEquals(false, finished?.first)
+        assertEquals("创建远端文件夹超时", finished?.second)
+        assertEquals("创建远端文件夹超时", engine.state.error)
+    }
+
+    @Test
     fun sendFailureSurfacesError() {
         val engine = FileTransferEngine(send = { false }, now = { 1L })
         assertEquals(false, engine.list("C:\\"))
@@ -280,6 +335,9 @@ class FileTransferEngineTest {
         assertEquals("C:\\dir\\file.txt", FileTransferState.childOf("C:\\dir", "file.txt"))
     }
 
+    private fun winPath(vararg parts: String): String =
+        parts.joinToString(92.toChar().toString())
+
     private fun lastRequest(sent: List<ByteArray>): FileRequest =
         lastRequestEnvelope(sent).request
 
@@ -291,6 +349,14 @@ class FileTransferEngineTest {
 
     private fun response(response: FileResponse): ByteArray =
         FileTransferCodec.encodeMainResponse(seq = 1, timestamp = 2, requestId = 3, response = response)
+
+    private fun operationResult(requestId: Long, response: FileResponse): ByteArray =
+        FileTransferCodec.encodeMainResponse(
+            seq = 1,
+            timestamp = 2,
+            requestId = requestId,
+            response = response,
+        )
 
     private fun hostRequest(request: FileRequest, requestId: Long): ByteArray =
         FileTransferCodec.encodeMainRequest(
