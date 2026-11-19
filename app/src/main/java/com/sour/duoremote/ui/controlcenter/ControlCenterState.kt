@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.sour.duoremote.data.DuoSettings
+import com.sour.duoremote.ui.input.GamepadEmulationMode
 import com.sour.duoremote.ui.input.GamepadStyle
 import java.util.Locale
 
@@ -22,6 +23,7 @@ enum class ControlField {
     VIDEO_SCALE,
     HDR,
     GAMEPAD_MODE,
+    GAMEPAD_EMULATION,
     VIBRATION,
     GAMEPAD_STYLE,
     GAMEPAD_DEADZONE,
@@ -207,6 +209,16 @@ class ControlCenterState {
                 settings = settings.copy(gamepadPassthrough = !settings.gamepadPassthrough),
             )
 
+            ControlField.GAMEPAD_EMULATION -> {
+                val values = GamepadEmulationMode.entries
+                val current = GamepadEmulationMode.fromStorage(settings.gamepadEmulation)
+                ControlAdjustment(
+                    settings = settings.copy(
+                        gamepadEmulation = values[(current.ordinal + step + values.size) % values.size].storage,
+                    ),
+                )
+            }
+
             ControlField.VIBRATION -> ControlAdjustment(
                 settings = settings.copy(vibration = !settings.vibration),
             )
@@ -366,6 +378,16 @@ fun controlRows(
                 "手柄模式",
                 if (settings.viewOnly) "仅观看时暂停远端输入" else "直通电脑或本地操作",
                 if (settings.gamepadPassthrough) "直通电脑" else "本地操作",
+            ),
+            ControlRow(
+                ControlField.GAMEPAD_EMULATION,
+                "手柄映射",
+                "实体手柄转键鼠模板",
+                if (settings.gamepadEmulation == "off") {
+                    "关闭"
+                } else {
+                    "映射 · ${GamepadEmulationMode.fromStorage(settings.gamepadEmulation).label}"
+                },
             ),
             ControlRow(
                 ControlField.VIBRATION,

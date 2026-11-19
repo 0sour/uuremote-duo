@@ -26,6 +26,9 @@ import com.sour.duoremote.protocol.rtc.UuRtcClient
 import com.sour.duoremote.protocol.signaling.SignalingClient
 import com.sour.duoremote.protocol.signaling.SignalingEndpoint
 import com.sour.duoremote.protocol.signaling.SoacCodec
+import com.sour.duoremote.ui.input.EmulatedAction
+import com.sour.duoremote.ui.input.GamepadEmulation
+import com.sour.duoremote.ui.input.GamepadEmulationMode
 import com.sour.duoremote.ui.input.GamepadMapper
 import com.sour.duoremote.ui.input.GamepadState
 import android.os.SystemClock
@@ -178,6 +181,8 @@ class SessionController(
     private var gamepadSent: GamepadState? = null
     private var gamepadSentAt = 0L
     private var gamepadJob: Job? = null
+    private var gamepadEmulationMode = GamepadEmulationMode.OFF
+    private var gamepadEmulation = GamepadEmulation(GamepadEmulationMode.OFF)
     private var reconnectAttempts = 0
     private var reconnectJob: Job? = null
     private var disconnectJob: Job? = null
@@ -305,7 +310,10 @@ class SessionController(
         invertLeftY: Boolean,
         invertRightY: Boolean,
         viewOnly: Boolean,
+        gamepadEmulation: String = "off",
     ) {
+        val emulationMode = GamepadEmulationMode.fromStorage(gamepadEmulation)
+        val emulationChanged = this.gamepadEmulationMode != emulationMode
         val passthroughChanged = this.gamepadPassthrough != gamepadPassthrough
         val clipboardChanged = this.clipboardSync != clipboardSync
         val viewOnlyChanged = this.viewOnly != viewOnly
@@ -323,6 +331,16 @@ class SessionController(
         this.gamepadDeadzone = gamepadDeadzone.coerceIn(0f, 0.9f)
         this.invertLeftY = invertLeftY
         this.invertRightY = invertRightY
+        if (emulationChanged) {
+            applyEmulated(this.gamepadEmulation.releaseAll())
+            this.gamepadEmulationMode = emulationMode
+            this.gamepadEmulation = GamepadEmulation(emulationMode)
+            if (emulationMode != GamepadEmulationMode.OFF) {
+                stopGamepad()
+            } else if (gamepadPassthrough && !viewOnly && !gamepadSuppressed) {
+                startGamepad()
+            }
+        }
         if (passthroughChanged) {
             if (gamepadPassthrough && !viewOnly) startGamepad() else stopGamepad()
         }
@@ -587,13 +605,33 @@ class SessionController(
 
     fun handleGamepadKey(keyCode: Int, action: Int): Boolean {
         if (viewOnly) return false
-        if (GamepadMapper.controlForKey(keyCode) == null &&
+        val emulation = gamepadEmulationMode != GamepadEmulationMode.OFF
+        if (!emulation &&
+            GamepadMapper.controlForKey(keyCode) == null &&
             keyCode != KeyEvent.KEYCODE_BUTTON_L2 &&
             keyCode != KeyEvent.KEYCODE_BUTTON_R2
         ) {
             return false
         }
         if (action != KeyEvent.ACTION_DOWN && action != KeyEvent.ACTION_UP) return true
+        if (emulation) {
+            val down = action == KeyEvent.ACTION_DOWN
+            when (keyCode) {
+                KeyEvent.KEYCODE_BUTTON_L2 -> applyEmulated(
+                    gamepadEmulation.onTriggerKey(left = true, down = down),
+                )
+
+                KeyEvent.KEYCODE_BUTTON_R2 -> applyEmulated(
+                    gamepadEmulation.onTriggerKey(left = false, down = down),
+                )
+
+                else -> {
+                    val control = GamepadMapper.controlForKey(keyCode) ?: return false
+                    applyEmulated(gamepadEmulation.onButton(control, down))
+                }
+            }
+            return true
+        }
         gamepadState = GamepadMapper.applyKey(
             gamepadState,
             keyCode,
@@ -608,6 +646,24 @@ class SessionController(
             !event.isFromSource(android.view.InputDevice.SOURCE_GAMEPAD)
         ) {
             return false
+        }
+        if (gamepadEmulationMode != GamepadEmulationMode.OFF) {
+            val sample = GamepadMapper.applyMotion(GamepadState(), event, deadzone = 0f)
+            applyEmulated(
+                gamepadEmulation.onSticks(
+                    leftX = sample.leftThumbX / 32767f,
+                    leftY = -sample.leftThumbY / 32767f,
+                    rightX = sample.rightThumbX / 32767f,
+                    rightY = -sample.rightThumbY / 32767f,
+                ),
+            )
+            applyEmulated(
+                gamepadEmulation.onTriggers(
+                    left = sample.leftTrigger / 255f,
+                    right = sample.rightTrigger / 255f,
+                ),
+            )
+            return true
         }
         gamepadState = GamepadMapper.applyMotion(
             gamepadState,
@@ -708,9 +764,23 @@ class SessionController(
 
     /** Releases keyboard, held mouse buttons, and neutralizes the pad in one call. */
     fun releaseAllInput() {
+        if (gamepadEmulationMode != GamepadEmulationMode.OFF) {
+            applyEmulated(gamepadEmulation.releaseAll())
+        }
         releaseAllKeys()
         releaseAllMouseButtons()
         releaseGamepad()
+    }
+
+    private fun applyEmulated(actions: List<EmulatedAction>) {
+        for (action in actions) {
+            when (action) {
+                is EmulatedAction.Key -> key(action.vk, action.down)
+                is EmulatedAction.MouseButton -> mouseButton(action.button, action.down)
+                is EmulatedAction.MouseMove -> mouseRelative(action.dx, action.dy)
+                is EmulatedAction.Scroll -> scroll(action.dx, action.dy)
+            }
+        }
     }
 
     /** Sends a neutral pad sample immediately; used when a page/menu takes over input. */
@@ -726,13 +796,14 @@ class SessionController(
 
     private fun canGamepad(): Boolean =
         gamepadPassthrough &&
+            gamepadEmulationMode == GamepadEmulationMode.OFF &&
             !gamepadSuppressed &&
             !viewOnly &&
             rtc != null &&
             dataChannels.containsKey(UuRtcClient.CONTROL_CHANNEL)
 
     private fun startGamepad() {
-        if (gamepadActive || !canGamepad()) return
+        if (gamepadActive || gamepadEmulationMode != GamepadEmulationMode.OFF || !canGamepad()) return
         gamepadActive = true
         gamepadState = GamepadState()
         gamepadSent = null

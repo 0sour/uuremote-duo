@@ -52,7 +52,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 版本 | `0.3.0`（development，versionCode 3） |
 | 主要验证设备 | Retroid Pocket Duo（双屏 1920×1080 + 1280×960，Android 掌机） |
 | 单屏模式 | 上屏 Activity / 下屏 Presentation 均可作为唯一屏 |
-| 自动测试 | 93 个 JVM 单测通过 |
+| 自动测试 | 99 个 JVM 单测通过 |
 | 构建 | debug / R8 release（默认未签名）通过；lint 通过 |
 | 发布 | **没有 GitHub Release，没有随仓库分发的 APK** |
 | 网络验收 | 1080p60 / 720p30、控制中心重连、仅观看、fit/fill 缩放、文件传输与文件夹上下传已真机验证 |
@@ -70,6 +70,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 双屏 | 上屏 Activity 只读视频/摘要；下屏 Presentation 承载完整 UI |
 | 单屏 | 上屏或下屏作为唯一宿主；设置、账号、控制中心、本地菜单均有单屏布局 |
 | 手柄 | XInput 位掩码直通、16ms `gpd_update`、零值释放、`gpd_disconnect`、震动消息 |
+| 手柄映射 | 桌面 / FPS / 模拟器三套模板，实体手柄转键鼠；关闭时仍直通电脑；设置与控制中心均可切换 |
 | 焦点 | 方向键/左摇杆移动、B 确认、A 返回、L1/R1 分类、L2/R2 子页、START 帮助 |
 | 控制中心 | 画面/显示、外设、安全、更多；画面改动待应用，X 应用并重连 / Y 取消 |
 | 设置 | 画面、屏幕、外设、安全、网络、外观、关于 7 类；DataStore 持久化 |
@@ -119,7 +120,7 @@ DuoRemote 是一个 Kotlin / Jetpack Compose 写的 Android 远程桌面客户�
 | 实时 | `io.github.webrtc-sdk:android:125.6422.07`（H.264 / Opus） |
 | 存储 | DataStore Preferences；EncryptedSharedPreferences / Android Keystore 保存敏感材料 |
 | 二维码 | ZXing core `3.5.3` |
-| 测试 | JUnit 4，MockWebServer；93 个 JVM 单测 |
+| 测试 | JUnit 4，MockWebServer；99 个 JVM 单测 |
 | CI | GitHub Actions：单测 + debug APK artifact；**不创建 Release** |
 
 ## 架构
@@ -187,6 +188,7 @@ uuremote-duo/
 │   ├── feature-matrix.md             # 功能矩阵与边界
 │   ├── feature-parity.md             # 官方/第三方对照
 │   ├── file-transfer.md              # 文件传输协议与限制
+│   ├── gamepad-emulation.md          # 桌面/FPS/模拟器手柄映射
 │   ├── v1-checklist.md               # 验收清单
 │   └── ui/                           # HTML 设计稿、图标、规范
 ├── .github/workflows/android.yml     # 单测 + debug 构建
@@ -260,7 +262,7 @@ GitHub Actions 在 `push` / `pull_request` 时运行 `:app:testDebugUnitTest` �
 | 当前 | 文件传输：远端目录浏览、单文件/多文件上传下载、文件夹（含子目录）上传与下载；应用内本机浏览 + 一次性文件夹授权已真机验收 |
 | 下一步 | 拖放、剪贴板文件；多显示器/超级屏（依赖电脑端能力） |
 | 后续 | HDR/4K/H.265、远开/关机、终端/端口映射 |
-| P2 | 实体手柄→键鼠映射模板（不做虚拟按键/宏/轮盘） |
+| P2 | 自定义手柄映射模板（不做虚拟按键/宏/轮盘） |
 
 ## 许可证与免责声明
 

@@ -163,6 +163,9 @@ class MainActivity : ComponentActivity() {
     private val effectiveGamepadPassthrough: Boolean
         get() = duoSettings.gamepadPassthrough && !duoSettings.viewOnly
 
+    private val gamepadEmulationActive: Boolean
+        get() = duoSettings.gamepadEmulation != "off" && !duoSettings.viewOnly
+
     private val displayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) = refreshDisplays()
 
@@ -200,6 +203,7 @@ class MainActivity : ComponentActivity() {
                     invertLeftY = saved.invertLeftY,
                     invertRightY = saved.invertRightY,
                     viewOnly = saved.viewOnly,
+                    gamepadEmulation = saved.gamepadEmulation,
                 )
             }
         }
@@ -290,6 +294,7 @@ class MainActivity : ComponentActivity() {
                                     invertLeftY = duoSettings.invertLeftY,
                                     invertRightY = duoSettings.invertRightY,
                                     viewOnly = duoSettings.viewOnly,
+                                    gamepadEmulation = duoSettings.gamepadEmulation,
                                 )
                             }
                         }
@@ -1389,6 +1394,7 @@ class MainActivity : ComponentActivity() {
             invertLeftY = resolved.invertLeftY,
             invertRightY = resolved.invertRightY,
             viewOnly = resolved.viewOnly,
+            gamepadEmulation = resolved.gamepadEmulation,
         )
         lifecycleScope.launch { settingsStore.save(resolved) }
     }
@@ -1735,7 +1741,7 @@ class MainActivity : ComponentActivity() {
         if (event.action == KeyEvent.ACTION_UP && event.keyCode == KeyEvent.KEYCODE_BUTTON_START) {
             val passthroughOwnsStart = route == AppRoute.Home &&
                 sessionController?.videoTrack != null &&
-                effectiveGamepadPassthrough &&
+                (effectiveGamepadPassthrough || gamepadEmulationActive) &&
                 !streamingUi.localMenu &&
                 streamingUi.imeMode == ImeMode.HIDDEN
             if (!passthroughOwnsStart) {
@@ -1788,7 +1794,7 @@ class MainActivity : ComponentActivity() {
             }
             return isPadKey(code)
         }
-        if (effectiveGamepadPassthrough) {
+        if (effectiveGamepadPassthrough || gamepadEmulationActive) {
             return sessionController?.handleGamepadKey(code, event.action) == true
         }
         if (event.action != KeyEvent.ACTION_UP) return isPadKey(code)
@@ -1866,7 +1872,7 @@ class MainActivity : ComponentActivity() {
     private fun handleStreamingMotion(event: MotionEvent): Boolean {
         if (route != AppRoute.Home) return false
         if (sessionController?.videoTrack == null) return false
-        if (!effectiveGamepadPassthrough) return false
+        if (!effectiveGamepadPassthrough && !gamepadEmulationActive) return false
         if (streamingUi.localMenu || streamingUi.imeMode != ImeMode.HIDDEN) return false
         return sessionController?.handleGamepadMotion(event) == true
     }

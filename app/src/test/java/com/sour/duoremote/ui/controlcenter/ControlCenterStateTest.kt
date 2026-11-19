@@ -69,6 +69,21 @@ class ControlCenterStateTest {
     }
 
     @Test
+    fun gamepadEmulationCyclesThroughTemplates() {
+        val state = ControlCenterState()
+        state.open(base)
+
+        val desktop = state.adjust(ControlField.GAMEPAD_EMULATION, 1, base).settings
+        assertEquals("desktop", desktop?.gamepadEmulation)
+        val fps = state.adjust(ControlField.GAMEPAD_EMULATION, 1, desktop!!).settings
+        assertEquals("fps", fps?.gamepadEmulation)
+        val emulator = state.adjust(ControlField.GAMEPAD_EMULATION, 1, fps!!).settings
+        assertEquals("emulator", emulator?.gamepadEmulation)
+        val off = state.adjust(ControlField.GAMEPAD_EMULATION, 1, emulator!!).settings
+        assertEquals("off", off?.gamepadEmulation)
+    }
+
+    @Test
     fun groupsSubtabsAndRowsClamp() {
         val state = ControlCenterState()
         state.open(base)

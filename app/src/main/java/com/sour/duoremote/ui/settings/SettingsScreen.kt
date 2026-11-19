@@ -63,6 +63,7 @@ import com.sour.duoremote.ui.components.DuoTabBar
 import com.sour.duoremote.ui.home.DuoBrandMark
 import com.sour.duoremote.ui.host.ScreenMode
 import com.sour.duoremote.ui.host.SingleHost
+import com.sour.duoremote.ui.input.GamepadEmulationMode
 import com.sour.duoremote.ui.input.GamepadStyle
 import com.sour.duoremote.ui.theme.DuoRadius
 import com.sour.duoremote.ui.theme.LocalDuoColors
@@ -155,7 +156,15 @@ fun SettingsTopPreview(
                     Column(Modifier.weight(1f)) {
                         PreviewValue("画面缩放", scaleLabel(settings.videoScale))
                         Spacer(Modifier.height(10.dp))
-                        PreviewValue("手柄", gamepadStyleLabel(settings.gamepadStyle) + " · " + if (settings.gamepadPassthrough) "直通电脑" else "本地操作")
+                        val emulation = GamepadEmulationMode.fromStorage(settings.gamepadEmulation)
+                        PreviewValue(
+                            "手柄",
+                            gamepadStyleLabel(settings.gamepadStyle) + " · " + when {
+                                emulation != GamepadEmulationMode.OFF -> "映射 · ${emulation.label}"
+                                settings.gamepadPassthrough -> "直通电脑"
+                                else -> "本地操作"
+                            },
+                        )
                         Spacer(Modifier.height(10.dp))
                         PreviewValue("触摸板", String.format(Locale.US, "%.1f× 灵敏度", settings.touchpadSensitivity))
                     }
@@ -690,6 +699,18 @@ internal fun settingsRows(
                 "直通电脑或本地操作工具箱",
                 if (settings.gamepadPassthrough) "直通电脑" else "本地操作",
                 adjust = boolToggle(settings.gamepadPassthrough) { onChange(settings.copy(gamepadPassthrough = it)) },
+            ),
+            row(
+                "手柄映射",
+                "实体手柄转键鼠模板；关闭时直通电脑或本地操作",
+                GamepadEmulationMode.fromStorage(settings.gamepadEmulation).label,
+                adjust = { delta ->
+                    val values = GamepadEmulationMode.entries
+                    val current = GamepadEmulationMode.fromStorage(settings.gamepadEmulation)
+                    val step = if (delta == 0) 1 else delta
+                    val next = values[(current.ordinal + step + values.size) % values.size]
+                    onChange(settings.copy(gamepadEmulation = next.storage))
+                },
             ),
             row(
                 "振动",

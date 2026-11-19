@@ -30,6 +30,8 @@ data class DuoSettings(
     val autoReconnect: Boolean = true,
     val gamepadStyle: GamepadStyle = GamepadStyle.NORMAL,
     val gamepadPassthrough: Boolean = true,
+    /** off / desktop / fps / emulator; see GamepadEmulationMode. */
+    val gamepadEmulation: String = "off",
     val vibration: Boolean = true,
     val gamepadDeadzone: Float = 0.16f,
     val invertLeftY: Boolean = false,
@@ -72,6 +74,7 @@ class SettingsStore(private val context: Context) {
                 autoReconnect = prefs[KEY_AUTO_RECONNECT] ?: true,
                 gamepadStyle = prefs[KEY_GAMEPAD_STYLE].toGamepadStyle(),
                 gamepadPassthrough = prefs[KEY_GAMEPAD_PASSTHROUGH] ?: true,
+                gamepadEmulation = prefs[KEY_GAMEPAD_EMULATION] ?: "off",
                 vibration = prefs[KEY_VIBRATION] ?: true,
                 gamepadDeadzone = prefs[KEY_GAMEPAD_DEADZONE] ?: 0.16f,
                 invertLeftY = prefs[KEY_INVERT_LEFT_Y] ?: false,
@@ -105,6 +108,7 @@ class SettingsStore(private val context: Context) {
             prefs[KEY_AUTO_RECONNECT] = settings.autoReconnect
             prefs[KEY_GAMEPAD_STYLE] = settings.gamepadStyle.name
             prefs[KEY_GAMEPAD_PASSTHROUGH] = settings.gamepadPassthrough
+            prefs[KEY_GAMEPAD_EMULATION] = settings.gamepadEmulation
             prefs[KEY_VIBRATION] = settings.vibration
             prefs[KEY_GAMEPAD_DEADZONE] = settings.gamepadDeadzone.coerceIn(0f, 0.9f)
             prefs[KEY_INVERT_LEFT_Y] = settings.invertLeftY
@@ -181,6 +185,7 @@ class SettingsStore(private val context: Context) {
         val KEY_AUTO_RECONNECT = booleanPreferencesKey("auto_reconnect")
         val KEY_GAMEPAD_STYLE = stringPreferencesKey("gamepad_style")
         val KEY_GAMEPAD_PASSTHROUGH = booleanPreferencesKey("gamepad_passthrough")
+        val KEY_GAMEPAD_EMULATION = stringPreferencesKey("gamepad_emulation")
         val KEY_VIBRATION = booleanPreferencesKey("vibration")
         val KEY_GAMEPAD_DEADZONE = floatPreferencesKey("gamepad_deadzone")
         val KEY_INVERT_LEFT_Y = booleanPreferencesKey("invert_left_y")
